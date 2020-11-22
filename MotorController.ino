@@ -49,12 +49,12 @@ void motor1_backward(int speed) {
  
 void loop()
 {
-  digitalWrite(LED_BUILTIN, LOW);    // turn the LED off by making the voltage LOW
-  motor1_forward(MAX_SPEED); // motor 1 tiến
-  delay(5000);//tiến 5 s
-  motor1_forward(120); // motor 1 tiến
-  delay(5000);//tiến 5 s
-  motor1_backward(MAX_SPEED); // motor 1 tiến
-  digitalWrite(LED_BUILTIN, HIGH);    // turn the LED off by making the voltage LOW
-  delay(5000);//tiến 5 s
+  digitalWrite(LED_BUILTIN, LOW);   
+  motor1_forward(MAX_SPEED); 
+  delay(5000);
+  motor1_forward(120); 
+  delay(5000);
+  motor1_backward(MAX_SPEED); 
+  digitalWrite(LED_BUILTIN, HIGH);   
+  delay(5000);
 }
