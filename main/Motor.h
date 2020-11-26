@@ -1,0 +1,22 @@
+#ifndef __MOTOR__
+#define __MOTOR__
+
+#include <Arduino.h>
+
+#define DIGITAL_MOTOR_1 7
+#define ANALOG_MOTOR_1 6
+#define DIGITAL_MOTOR_2 4
+#define ANALOG_MOTOR_2 5
+#define ENCODER_2 2
+#define ENCODER_1 3
+#define MAX_SPEED 255 //từ 0-255
+#define MIN_SPEED 0
+
+void setup_motors();
+void motors_forward(int speed);
+void motors_backward(int speed);
+void motors_left(int speed, int angle);
+void motors_right(int speed, int angle);
+void motors_stop();
+
+#endif
