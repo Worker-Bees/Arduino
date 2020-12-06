@@ -96,14 +96,22 @@ void setup() {
 } 
 
 void loop() {
-   if (state < NUM_STATES) {
-      (*state_machine[state].function) ();
-   }
+//   if (state < NUM_STATES) {
+//      (*state_machine[state].function) ();
+//   }
+  read_sensors();
+  Serial.print(front_dis);
+  Serial.print(" ");
+  Serial.print(front_right_dis);
+  Serial.print(" ");
+  Serial.print(right_top_dis);
+  Serial.print(" ");
+  Serial.println(right_bottom_dis);
 } 
 
 
 void START_POINT_func() {
-  motors_left(120, 10);
+  motors_left(100, 20);
   do {
     read_sensors();
   } while (right_top_dis > 80);
@@ -114,7 +122,7 @@ void START_POINT_func() {
 void AWAY_WALL_func() {
   rotation_tune = 1;
   do {
-    motors_right(80, 5 + 3 * rotation_tune);
+    motors_right(80, constrain(10 + 10 * rotation_tune, 10, 40));
     read_sensors();
     if (distance_diff <= right_top_dis - right_bottom_dis) {
       rotation_tune++;
@@ -134,7 +142,7 @@ void AWAY_WALL_func() {
 void TOWARD_WALL_func() {
   rotation_tune = 1;
   do {
-    motors_left(80, 5 + 3 * rotation_tune);
+    motors_left(80, constrain(10 + 10 * rotation_tune, 10, 40));
     read_sensors();
     if (distance_diff <= right_bottom_dis - right_top_dis) {
       rotation_tune++;
@@ -158,8 +166,8 @@ void PARALLEL_WALL_func() {
   } while (right_top_dis == right_bottom_dis && right_top_dis != 81 && right_bottom_dis !=81);
   prev_state = PARALLEL_WALL;
   if (right_top_dis == 81 && front_right_dis == 81) {
-    motors_left(50, 10);
-    delay(2000);
+    motors_left(80, 40);
+    delay(1000);
     if (right_top_dis == 81) state = GET_LOST;
     else state = AWAY_WALL;
   } else if (right_top_dis == 81 && right_bottom_dis != 81) {
