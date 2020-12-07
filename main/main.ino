@@ -93,20 +93,21 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(ENCODER_2), encoder_2_pulses_count, RISING);
   Serial.begin(9600);
   delay(3000);
+  read_sensors();
 } 
 
 void loop() {
-//   if (state < NUM_STATES) {
-//      (*state_machine[state].function) ();
-//   }
-  read_sensors();
-  Serial.print(front_dis);
-  Serial.print(" ");
-  Serial.print(front_right_dis);
-  Serial.print(" ");
-  Serial.print(right_top_dis);
-  Serial.print(" ");
-  Serial.println(right_bottom_dis);
+   if (state < NUM_STATES) {
+      (*state_machine[state].function) ();
+   }
+//  read_sensors();
+//  Serial.print(front_dis);
+//  Serial.print(" ");
+//  Serial.print(front_right_dis);
+//  Serial.print(" ");
+//  Serial.print(right_top_dis);
+//  Serial.print(" ");
+//  Serial.println(right_bottom_dis);
 } 
 
 
@@ -122,7 +123,7 @@ void START_POINT_func() {
 void AWAY_WALL_func() {
   rotation_tune = 1;
   do {
-    motors_right(80, constrain(10 + 10 * rotation_tune, 10, 40));
+    motors_right(80, constrain(5 + 5 * rotation_tune, 10, 20));
     read_sensors();
     if (distance_diff <= right_top_dis - right_bottom_dis) {
       rotation_tune++;
@@ -148,7 +149,7 @@ void TOWARD_WALL_func() {
       rotation_tune++;
     } else rotation_tune--;
     distance_diff == right_bottom_dis - right_top_dis;
-  } while (right_bottom_dis - right_top_dis > 0 && right_top_dis != 81 && right_bottom_dis != 81 && front_dis > 20);
+  } while (right_bottom_dis - right_top_dis > 0 && right_top_dis == 81 && front_dis > 20 && front_right_dis != 81);
   prev_state = TOWARD_WALL;
   if (front_dis <= 20) {
     state = SEE_OBSTACLE;
@@ -166,11 +167,11 @@ void PARALLEL_WALL_func() {
   } while (right_top_dis == right_bottom_dis && right_top_dis != 81 && right_bottom_dis !=81);
   prev_state = PARALLEL_WALL;
   if (right_top_dis == 81 && front_right_dis == 81) {
-    motors_left(80, 40);
+    motors_left(120, 60);
     delay(1000);
     if (right_top_dis == 81) state = GET_LOST;
     else state = AWAY_WALL;
-  } else if (right_top_dis == 81 && right_bottom_dis != 81) {
+  } else if (right_top_dis == 81) {
     state = TOWARD_WALL;
   } else if (right_top_dis > right_bottom_dis) {
     state = AWAY_WALL;
@@ -180,7 +181,7 @@ void PARALLEL_WALL_func() {
 }
 
 void SEE_OBSTACLE_func() {
-  if (right_bottom_dis == 81 && right_top_dis == 81 && front_right_dis > 81) {
+  if (right_bottom_dis == 81 && right_top_dis == 81) {
     motors_left(80, 80);
     do {
       read_sensors();
