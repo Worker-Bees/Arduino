@@ -1,12 +1,13 @@
+
 #ifndef __MOTOR__
 #define __MOTOR__
 
 #include <Arduino.h>
 
-#define DIGITAL_MOTOR_1 7
-#define ANALOG_MOTOR_1 6
-#define DIGITAL_MOTOR_2 4
-#define ANALOG_MOTOR_2 5
+#define DIGITAL_MOTOR_1 4
+#define ANALOG_MOTOR_1 5
+#define DIGITAL_MOTOR_2 6
+#define ANALOG_MOTOR_2 7
 #define ENCODER_2 2
 #define ENCODER_1 3
 #define MAX_SPEED 255 //từ 0-255

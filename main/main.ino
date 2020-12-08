@@ -115,7 +115,7 @@ void START_POINT_func() {
   motors_left(100, 20);
   do {
     read_sensors();
-  } while (right_top_dis > 80);
+  } while (right_top_dis == 60);
   prev_state = START_POINT;
   state = AWAY_WALL;
 }
@@ -129,7 +129,7 @@ void AWAY_WALL_func() {
       rotation_tune++;
     } else rotation_tune--;
     distance_diff == right_top_dis - right_bottom_dis;
-  } while (right_top_dis - right_bottom_dis > 0 && right_top_dis != 81 && front_dis > 20);
+  } while (right_top_dis - right_bottom_dis > 0 && right_top_dis != 60 && front_dis > 20);
   prev_state = AWAY_WALL;
   if (front_dis <= 20) {
     state = SEE_OBSTACLE;
@@ -145,11 +145,12 @@ void TOWARD_WALL_func() {
   do {
     motors_left(80, constrain(10 + 10 * rotation_tune, 10, 40));
     read_sensors();
+    if (right_top_dis == 60) right_top_dis = 11;
     if (distance_diff <= right_bottom_dis - right_top_dis) {
       rotation_tune++;
     } else rotation_tune--;
     distance_diff == right_bottom_dis - right_top_dis;
-  } while (right_bottom_dis - right_top_dis > 0 && right_top_dis == 81 && front_dis > 20 && front_right_dis != 81);
+  } while (right_bottom_dis - right_top_dis > 0 && right_bottom_dis != 60  && front_dis > 20);
   prev_state = TOWARD_WALL;
   if (front_dis <= 20) {
     state = SEE_OBSTACLE;
@@ -164,14 +165,16 @@ void PARALLEL_WALL_func() {
   motors_forward(80);
   do {
     read_sensors();
-  } while (right_top_dis == right_bottom_dis && right_top_dis != 81 && right_bottom_dis !=81);
+  } while (right_top_dis == right_bottom_dis && right_top_dis != 60 && right_bottom_dis !=60 && front_dis > 20);
   prev_state = PARALLEL_WALL;
-  if (right_top_dis == 81 && front_right_dis == 81) {
-    motors_left(120, 60);
-    delay(1000);
-    if (right_top_dis == 81) state = GET_LOST;
+  if (front_dis <= 20) {
+    state = SEE_OBSTACLE;
+  } else if (right_top_dis == 60 && front_right_dis == 81) {
+    motors_left(200, 150);
+    delay(500);
+    if (right_top_dis == 60) state = GET_LOST;
     else state = AWAY_WALL;
-  } else if (right_top_dis == 81) {
+  } else if (right_top_dis == 60 || front_right_dis < 25) {
     state = TOWARD_WALL;
   } else if (right_top_dis > right_bottom_dis) {
     state = AWAY_WALL;
@@ -181,23 +184,22 @@ void PARALLEL_WALL_func() {
 }
 
 void SEE_OBSTACLE_func() {
-  if (right_bottom_dis == 81 && right_top_dis == 81) {
-    motors_left(80, 80);
+  if (right_bottom_dis == 60 && right_top_dis == 60) {
+    motors_left(150, 120);
     do {
       read_sensors();
-    } while (front_dis != 81);
+    } while (front_dis != 60);
   } else {
     motors_stop();
     do {
       read_sensors();
-    } while(front_dis < 20);
+    } while(front_dis < 20 && right_bottom_dis == 60 && right_top_dis == 60);
   }
-  
   state = PARALLEL_WALL;
 }
 
 void GET_LOST_func() {
-  motors_left(80, 80);
+  motors_left(150, 120);
   do {
     read_sensors();
   } while (front_right_dis == 81);
@@ -209,15 +211,15 @@ void GET_LOST_func() {
 }
 
 int handle_sensors_noise(int val) {
-  if (val > 80 || val < 11) return 81;
+  if (val > 80 || val < 10) return 81;
   else return val;
 }
 
 void read_sensors() {
-  front_dis = handle_sensors_noise(front_sensor.distance());
-  front_right_dis = handle_sensors_noise(front_right_sensor.distance());
-  right_top_dis = handle_sensors_noise(right_top_sensor.distance());
-  right_bottom_dis = handle_sensors_noise(right_bottom_sensor.distance());
+  front_dis = constrain(handle_sensors_noise(front_sensor.distance()), 10, 60);
+  front_right_dis = constrain(handle_sensors_noise(front_right_sensor.distance()), 16, 81);
+  right_top_dis = constrain(handle_sensors_noise(right_top_sensor.distance()), 10, 60);
+  right_bottom_dis = constrain(handle_sensors_noise(right_bottom_sensor.distance()), 10, 60);
 }
 
 
