@@ -170,7 +170,9 @@ void PARALLEL_WALL_func() {
     state = SEE_OBSTACLE;
   } else if (right_top_dis == 60 && front_right_dis == 81) {
     motors_left(150, 120);
-    delay(500);
+    for(int i = 0; right_top_dis != 60; i++){
+          delay(1);
+    }
     if (right_top_dis == 60) state = GET_LOST;
     else state = AWAY_WALL;
   } else if (right_top_dis == 60 || front_right_dis < 25) {
@@ -184,10 +186,10 @@ void PARALLEL_WALL_func() {
 
 void SEE_OBSTACLE_func() {
   if (right_bottom_dis == 60 && right_top_dis == 60) {
-    motors_left(120, 100);
+    motors_left(150, 150);
     do {
       read_sensors();
-    } while (front_dis != 60);
+    } while (front_dis != 60 || front_right_dis < 15);
   } else {
     motors_stop();
     do {
@@ -198,10 +200,10 @@ void SEE_OBSTACLE_func() {
 }
 
 void GET_LOST_func() {
-  motors_left(120, 100);
+  motors_left(150, 150);
   do {
     read_sensors();
-  } while (front_right_dis == 81);
+  } while (front_right_dis == 81 || front_dis != 60);
   if (front_right_dis < 28) {
     state = TOWARD_WALL;
   } else if (front_right_dis >= 28){
