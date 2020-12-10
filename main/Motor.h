@@ -19,5 +19,6 @@ void motors_backward(int speed);
 void motors_left(int speed, int angle);
 void motors_right(int speed, int angle);
 void motors_stop();
+void motors_hard_left(int left_speed, int right_speed);
 
 #endif

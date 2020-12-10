@@ -168,12 +168,12 @@ void PARALLEL_WALL_func() {
   prev_state = PARALLEL_WALL;
   if (front_dis <= 20) {
     state = SEE_OBSTACLE;
-  } else if (right_top_dis == 60 && front_right_dis == 81) {
-    motors_left(150, 120);
-    for(int i = 0; right_top_dis != 60; i++){
-          delay(1);
+  } else if (right_top_dis == 60 && front_right_dis == 60) {
+    motors_left(120, 100);
+    for(int i = 0; ((right_top_dis > 45) & i < 30); i++){
+       read_sensors();
     }
-    if (right_top_dis == 60) state = GET_LOST;
+    if (right_top_dis > 40) state = GET_LOST;
     else state = AWAY_WALL;
   } else if (right_top_dis == 60 || front_right_dis < 25) {
     state = TOWARD_WALL;
@@ -186,7 +186,7 @@ void PARALLEL_WALL_func() {
 
 void SEE_OBSTACLE_func() {
   if (right_bottom_dis == 60 && right_top_dis == 60) {
-    motors_left(150, 150);
+    motors_hard_left(80, 120);
     do {
       read_sensors();
     } while (front_dis != 60 || front_right_dis < 15);
@@ -194,16 +194,16 @@ void SEE_OBSTACLE_func() {
     motors_stop();
     do {
       read_sensors();
-    } while(front_dis < 20 && right_bottom_dis == 60 && right_top_dis == 60);
+    } while(front_dis < 20 && (right_bottom_dis < 40 || right_top_dis < 40));
   }
   state = PARALLEL_WALL;
 }
 
 void GET_LOST_func() {
-  motors_left(150, 150);
+  motors_hard_left(80, 120);
   do {
     read_sensors();
-  } while (front_right_dis == 81 || front_dis != 60);
+  } while (front_right_dis == 60 || front_dis != 60);
   if (front_right_dis < 28) {
     state = TOWARD_WALL;
   } else if (front_right_dis >= 28){
@@ -218,7 +218,7 @@ int handle_sensors_noise(int val) {
 
 void read_sensors() {
   front_dis = constrain(handle_sensors_noise(front_sensor.distance()), 10, 60);
-  front_right_dis = constrain(handle_sensors_noise(front_right_sensor.distance()), 14, 81);
+  front_right_dis = constrain(handle_sensors_noise(front_right_sensor.distance()), 14, 60);
   right_top_dis = constrain(handle_sensors_noise(right_top_sensor.distance()), 10, 60);
   right_bottom_dis = constrain(handle_sensors_noise(right_bottom_sensor.distance()), 10, 60);
 }

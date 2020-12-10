@@ -50,3 +50,10 @@ void motors_left(int speed, int angle) {
   digitalWrite(DIGITAL_MOTOR_2, HIGH);
   analogWrite(ANALOG_MOTOR_2, right_speed);
 }
+
+void motors_hard_left(int left_speed, int right_speed) {
+  digitalWrite(DIGITAL_MOTOR_1, LOW);
+  analogWrite(ANALOG_MOTOR_1, left_speed);
+  digitalWrite(DIGITAL_MOTOR_2, HIGH);
+  analogWrite(ANALOG_MOTOR_2, 255 - right_speed);
+}
