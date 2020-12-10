@@ -149,7 +149,7 @@ void TOWARD_WALL_func() {
       rotation_tune++;
     } else rotation_tune--;
     distance_diff == front_right_dis - 10;
-  } while (front_right_dis < 15 && front_dis > 20);
+  } while (front_right_dis < 16 && front_dis > 20);
   prev_state = TOWARD_WALL;
   if (front_dis <= 20) {
     state = SEE_OBSTACLE;
@@ -218,7 +218,7 @@ int handle_sensors_noise(int val) {
 
 void read_sensors() {
   front_dis = constrain(handle_sensors_noise(front_sensor.distance()), 10, 60);
-  front_right_dis = constrain(handle_sensors_noise(front_right_sensor.distance()), 16, 81);
+  front_right_dis = constrain(handle_sensors_noise(front_right_sensor.distance()), 14, 81);
   right_top_dis = constrain(handle_sensors_noise(right_top_sensor.distance()), 10, 60);
   right_bottom_dis = constrain(handle_sensors_noise(right_bottom_sensor.distance()), 10, 60);
 }
