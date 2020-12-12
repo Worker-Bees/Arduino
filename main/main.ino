@@ -1,5 +1,6 @@
 #include "Motor.h"
 #include <SharpIR.h> 
+#include <SimpleKalmanFilter.h>
 
 #define FRONT_SENSOR A0
 #define FRONT_RIGHT_SENSOR A1 
@@ -13,6 +14,7 @@ SharpIR front_sensor(FRONT_SENSOR, SENSOR_MODEL);
 SharpIR front_right_sensor(FRONT_RIGHT_SENSOR, SENSOR_MODEL); 
 SharpIR right_top_sensor(RIGHT_TOP_SENSOR, SENSOR_MODEL); 
 SharpIR right_bottom_sensor(RIGHT_BOTTOM_SENSOR, SENSOR_MODEL); 
+SimpleKalmanFilter filter(1, 1, 0.001);
 
 // State machine implementation
 typedef enum
@@ -44,6 +46,7 @@ typedef struct {
 
 int handle_sensors_noise(int val);
 void read_sensors();
+void filter_sensors_value();
 void encoder_1_pulses_count();
 void encoder_2_pulses_count();
 void START_POINT_func();
@@ -66,6 +69,8 @@ volatile unsigned int encoder_1_start_time = 0;
 volatile int encoder_1_avg_time = 0;
 volatile int rotation_tune = 1;
 volatile int distance_diff = 1;
+volatile int total_val = 5;
+volatile int error = 2;
 
 StateMachine state_machine[] =
 {
@@ -105,7 +110,7 @@ void loop() {
    if (state < NUM_STATES) {
       (*state_machine[state].function) ();
    }
-//  read_sensors();
+//  filter_sensors_value();
 //  Serial.print(front_ultra_dis);
 //  Serial.print(" ");
 //  Serial.print(front_dis);
@@ -210,8 +215,8 @@ void SEE_OBSTACLE_func() {
 void GET_LOST_func() {
   motors_hard_left(80, 120);
   do {
-    read_sensors();
-    delay(50);
+    filter_sensors_value();
+//    delay(50);
   } while ((front_right_dis > 70 || front_dis < 50) && right_top_dis == 60);
    state = AWAY_WALL;
 }
@@ -242,6 +247,19 @@ void read_sensors() {
   front_right_dis = constrain(handle_sensors_noise(front_right_sensor.distance()), 14, 81);
   right_top_dis = constrain(handle_sensors_noise(right_top_sensor.distance()), 10, 60);
   right_bottom_dis = constrain(handle_sensors_noise(right_bottom_sensor.distance()), 10, 60);
+}
+
+void filter_sensors_value() {
+  int count;
+  for(int i = 0; i < total_val; i++) {
+    read_sensors();
+    if(front_right_dis > 80) {
+      count = count + 1;
+    }
+  }
+  if(count > error) {
+    front_right_dis = 81;
+  }
 }
 
 
