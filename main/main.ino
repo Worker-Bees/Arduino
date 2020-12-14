@@ -7,6 +7,8 @@
 #define RIGHT_BOTTOM_SENSOR A3
 #define ECHO 13
 #define TRIG 12
+#define TRIG2 8
+#define ECHO2 9
 
 #define SENSOR_MODEL 1080 
 SharpIR front_sensor(FRONT_SENSOR, SENSOR_MODEL); 
@@ -58,6 +60,7 @@ volatile unsigned int front_ultra_dis = 0;
 volatile unsigned int front_right_dis = 0;
 volatile unsigned int right_top_dis = 0;
 volatile unsigned int right_bottom_dis = 0;
+volatile unsigned int right_ultra_dis = 0;
 volatile unsigned int encoder_2_pulses = 0;
 volatile unsigned int encoder_2_start_time = 0;
 volatile int encoder_2_avg_time = 0;
@@ -94,6 +97,8 @@ void setup() {
   setup_motors();
   pinMode(TRIG,OUTPUT);   // chân trig sẽ phát tín hiệu
   pinMode(ECHO,INPUT);    // chân echo sẽ nhận tín hiệu
+  pinMode(TRIG2,OUTPUT);   // chân trig sẽ phát tín hiệu
+  pinMode(ECHO2,INPUT);    // chân echo sẽ nhận tín hiệu
   attachInterrupt(digitalPinToInterrupt(ENCODER_1), encoder_1_pulses_count, RISING);
   attachInterrupt(digitalPinToInterrupt(ENCODER_2), encoder_2_pulses_count, RISING);
   Serial.begin(9600);
@@ -114,7 +119,9 @@ void loop() {
 //  Serial.print(" ");
 //  Serial.print(right_top_dis);
 //  Serial.print(" ");
-//  Serial.println(right_bottom_dis);
+//  Serial.print(right_bottom_dis);
+//  Serial.print(" ");
+//  Serial.println(right_ultra_dis);
 } 
 
 
@@ -122,7 +129,7 @@ void START_POINT_func() {
   motors_left(100, 20);
   do {
     read_sensors();
-  } while (right_top_dis == 60);
+  } while (front_right_dis == 15);
   prev_state = START_POINT;
   state = AWAY_WALL;
 }
@@ -132,15 +139,15 @@ void AWAY_WALL_func() {
   do {
     motors_right(80, constrain(5 + 5 * rotation_tune, 10, 20));
     read_sensors();
-    if (distance_diff <= right_top_dis - right_bottom_dis) {
+    if (distance_diff <= right_ultra_dis - 10) {
       rotation_tune++;
     } else rotation_tune--;
-    distance_diff == right_top_dis - right_bottom_dis;
-  } while (right_top_dis - right_bottom_dis > 0 && front_right_dis >= 16 && right_top_dis != 60 && front_dis > 20 && front_ultra_dis > 10);
+    distance_diff == right_ultra_dis - 10;
+  } while (right_ultra_dis > 10 && front_right_dis >= 16 && right_ultra_dis < 20 && front_ultra_dis > 15);
   prev_state = AWAY_WALL;
-  if (front_dis <= 20 || front_ultra_dis <= 10) {
+  if (front_ultra_dis <= 15) {
     state = SEE_OBSTACLE;
-  } else if (right_top_dis == right_bottom_dis) {
+  } else if (right_ultra_dis == 10) {
     state = PARALLEL_WALL;
   } else {
     state = TOWARD_WALL;
@@ -156,11 +163,11 @@ void TOWARD_WALL_func() {
       rotation_tune++;
     } else rotation_tune--;
     distance_diff == 16 - front_right_dis;
-  } while (front_right_dis < 16 && front_dis > 20 && front_ultra_dis > 10 && right_top_dis != 60 );
+  } while (front_right_dis < 16 && front_ultra_dis > 15 && right_ultra_dis < 20);
   prev_state = TOWARD_WALL;
-  if (front_dis <= 20 || front_ultra_dis <= 10) {
+  if (front_ultra_dis <= 15) {
     state = SEE_OBSTACLE;
-  } else if (right_top_dis == right_bottom_dis) {
+  } else if (right_ultra_dis == 10) {
     state = PARALLEL_WALL;
   } else {
     state = AWAY_WALL;
@@ -171,21 +178,15 @@ void PARALLEL_WALL_func() {
   motors_forward(80);
   do {
     read_sensors();
-  } while (right_top_dis == right_bottom_dis && front_right_dis < 16 && right_top_dis != 60 && right_bottom_dis !=60 && front_dis > 20 && front_ultra_dis > 10);
+  } while (right_ultra_dis == 10 && front_right_dis < 16 && front_ultra_dis > 15);
   prev_state = PARALLEL_WALL;
-  if (front_dis <= 20 || front_ultra_dis <= 10) {
+  if (front_ultra_dis <= 15) {
     state = SEE_OBSTACLE;
-  } else if (right_top_dis > 45 && front_right_dis > 70) {
-    motors_left(120, 100);
-    for(int i = 0; i < 10; i++){
-       read_sensors();
-       if (right_top_dis > 45) break;
-    }
-    if (right_top_dis > 40) state = GET_LOST;
-    else state = AWAY_WALL;
-  } else if (right_top_dis == 60 || front_right_dis < 25) {
+  } else if (right_ultra_dis > 20 && front_right_dis > 70) {
+    state = GET_LOST;
+  } else if (right_ultra_dis <  10) {
     state = TOWARD_WALL;
-  } else if (right_top_dis > right_bottom_dis) {
+  } else if (right_ultra_dis > 10) {
     state = AWAY_WALL;
   } else {
     state = TOWARD_WALL;
@@ -193,26 +194,27 @@ void PARALLEL_WALL_func() {
 }
 
 void SEE_OBSTACLE_func() {
-  if (front_ultra_dis <= 15) {
+  if (right_ultra_dis < 20) {
     motors_stop();
     do {
+      delay(500);
       read_sensors();
-    } while(front_ultra_dis <= 10 && right_top_dis != 60);
-  } else if (right_bottom_dis == 60 && right_top_dis == 60) {
-    motors_hard_left(80, 120);
+    } while(front_ultra_dis <= 15);
+      delay(500); 
+  } else{
+    motors_hard_left(120, 120);
     do {
       read_sensors();
-    } while (front_dis != 60 || front_right_dis < 10);
-  } 
+    } while (front_dis != 60 || front_right_dis < 15);
+  }
   state = PARALLEL_WALL;
 }
 
 void GET_LOST_func() {
-  motors_hard_left(80, 120);
+  motors_hard_left(120, 120);
   do {
-    read_sensors();
-    delay(50);
-  } while ((front_right_dis > 70 || front_dis < 50) && right_top_dis == 60);
+    read_ir_sensors();
+  } while ((front_right_dis > 70 || front_dis < 50) && right_ultra_dis > 20);
    state = AWAY_WALL;
 }
 
@@ -222,9 +224,17 @@ int handle_sensors_noise(int val) {
 }
 
 void read_sensors() {
+  read_ultra_sensors();
+  read_ir_sensors();
+}
+void read_ir_sensors() {
+  front_dis = constrain(handle_sensors_noise(front_sensor.distance()), 15, 60);
+  front_right_dis = constrain(handle_sensors_noise(front_right_sensor.distance()), 14, 81);
+}
+
+void read_ultra_sensors() {
   unsigned long duration; // biến đo thời gian
   int distance;           // biến lưu khoảng cách
-  
   /* Phát xung từ chân trig */
   digitalWrite(TRIG,0);   // tắt chân trig
   delayMicroseconds(2);
@@ -234,16 +244,25 @@ void read_sensors() {
   
   /* Tính toán thời gian */
   // Đo độ rộng xung HIGH ở chân echo. 
-  duration = pulseIn(ECHO, HIGH);  
+  duration = pulseIn(ECHO, HIGH);
   // Tính khoảng cách đến vật.
   distance = int(duration/2/29.412);
   front_ultra_dis = constrain(distance, 4, 120);
-  front_dis = constrain(handle_sensors_noise(front_sensor.distance()), 15, 60);
-  front_right_dis = constrain(handle_sensors_noise(front_right_sensor.distance()), 14, 81);
-  right_top_dis = constrain(handle_sensors_noise(right_top_sensor.distance()), 10, 60);
-  right_bottom_dis = constrain(handle_sensors_noise(right_bottom_sensor.distance()), 10, 60);
+  delay(1);
+    /* Phát xung từ chân trig */
+  digitalWrite(TRIG2,0);   // tắt chân trig
+  delayMicroseconds(2);
+  digitalWrite(TRIG2,1);   // phát xung từ chân trig
+  delayMicroseconds(5);   // xung có độ dài 5 microSeconds
+  digitalWrite(TRIG2,0);   // tắt chân trig
+  
+  /* Tính toán thời gian */
+  // Đo độ rộng xung HIGH ở chân echo. 
+  duration = pulseIn(ECHO2, HIGH);
+  // Tính khoảng cách đến vật.
+  distance = int(duration/2/29.412);
+  right_ultra_dis = constrain(distance, 4, 120);
 }
-
 
 void encoder_1_pulses_count() {
     if (encoder_1_pulses++ == 374) {
