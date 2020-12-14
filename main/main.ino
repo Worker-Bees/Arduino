@@ -147,6 +147,8 @@ void AWAY_WALL_func() {
   prev_state = AWAY_WALL;
   if (front_ultra_dis <= 15) {
     state = SEE_OBSTACLE;
+  } else if (right_ultra_dis > 20 && front_right_dis > 70) {
+    state = GET_LOST;
   } else if (right_ultra_dis == 10) {
     state = PARALLEL_WALL;
   } else {
@@ -167,6 +169,8 @@ void TOWARD_WALL_func() {
   prev_state = TOWARD_WALL;
   if (front_ultra_dis <= 15) {
     state = SEE_OBSTACLE;
+  } else if (right_ultra_dis > 20 && front_right_dis > 70) {
+    state = GET_LOST;
   } else if (right_ultra_dis == 10) {
     state = PARALLEL_WALL;
   } else {
@@ -202,7 +206,7 @@ void SEE_OBSTACLE_func() {
     } while(front_ultra_dis <= 15);
       delay(500); 
   } else{
-    motors_hard_left(120, 120);
+    motors_hard_left(120, 150);
     do {
       read_sensors();
     } while (front_dis != 60 || front_right_dis < 15);
@@ -211,9 +215,9 @@ void SEE_OBSTACLE_func() {
 }
 
 void GET_LOST_func() {
-  motors_hard_left(120, 120);
+  motors_hard_left(120, 150);
   do {
-    read_ir_sensors();
+    read_sensors();
   } while ((front_right_dis > 70 || front_dis < 50) && right_ultra_dis > 20);
    state = AWAY_WALL;
 }
