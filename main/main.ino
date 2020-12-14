@@ -206,10 +206,14 @@ void SEE_OBSTACLE_func() {
     } while(front_ultra_dis <= 15);
       delay(500); 
   } else{
+    motors_forward(60);
+    do{
+      read_ultra_sensors();
+    } while(front_ultra_dis > 10);
     motors_hard_left(120, 150);
     do {
       read_sensors();
-    } while (front_dis != 60 || front_right_dis < 15);
+    } while (front_dis > 50 || front_right_dis < 15);
   }
   state = PARALLEL_WALL;
 }
