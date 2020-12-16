@@ -126,7 +126,7 @@ void loop() {
 
 
 void START_POINT_func() {
-  motors_left(100, 20);
+  motors_left(80, 20);
   do {
     read_sensors();
   } while (front_right_dis == 15);
@@ -137,7 +137,7 @@ void START_POINT_func() {
 void AWAY_WALL_func() {
   rotation_tune = 1;
   do {
-    motors_right(150, constrain(10 + 10 * rotation_tune, 20, 40));
+    motors_right(80, constrain(10 + 10 * rotation_tune, 20, 40));
     read_sensors();
     if (distance_diff <= right_ultra_dis - 9) {
       rotation_tune++;
@@ -159,7 +159,7 @@ void AWAY_WALL_func() {
 void TOWARD_WALL_func() {
   rotation_tune = 1;
   do {
-    motors_left(150, constrain(10 + 10 * rotation_tune, 40, 80));
+    motors_left(80, constrain(10 + 10 * rotation_tune, 20, 60));
     read_sensors();
     if (distance_diff <= 18 - front_right_dis) {
       rotation_tune++;
@@ -179,7 +179,7 @@ void TOWARD_WALL_func() {
 }
 
 void PARALLEL_WALL_func() {
-  motors_forward(150);
+  motors_forward(80);
   do {
     read_sensors();
   } while (right_ultra_dis == 9 && front_right_dis <= 18 && front_ultra_dis > 18);
