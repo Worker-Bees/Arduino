@@ -55,18 +55,10 @@ void PARALLEL_WALL_func();
 void SEE_OBSTACLE_func();
 void GET_LOST_func();
 
-volatile unsigned int front_dis = 0;
 volatile unsigned int front_ultra_dis = 0;
 volatile unsigned int front_right_dis = 0;
-volatile unsigned int right_top_dis = 0;
-volatile unsigned int right_bottom_dis = 0;
 volatile unsigned int right_ultra_dis = 0;
-volatile unsigned int encoder_2_pulses = 0;
-volatile unsigned int encoder_2_start_time = 0;
-volatile int encoder_2_avg_time = 0;
-volatile unsigned int encoder_1_pulses = 0;
-volatile unsigned int encoder_1_start_time = 0;
-volatile int encoder_1_avg_time = 0;
+
 volatile int rotation_tune = 1;
 volatile int distance_diff = 1;
 
@@ -81,16 +73,6 @@ StateMachine state_machine[] =
 };
 
 State state = START_POINT;
-State prev_state = START_POINT;
-StateInput state_input = {
-    prev_state: START_POINT,
-    front_dis: handle_sensors_noise(front_sensor.distance()),
-    front_right_dis: handle_sensors_noise(front_right_sensor.distance()),
-    right_top_dis: handle_sensors_noise(right_top_sensor.distance()),
-    right_bottom_dis: handle_sensors_noise(right_bottom_sensor.distance()),
-    motor_1_speed: encoder_1_avg_time,
-    motor_2_speed: encoder_2_avg_time,
-};
 
 void setup() { 
   // put your setup code here, to run once:
@@ -99,8 +81,6 @@ void setup() {
   pinMode(ECHO,INPUT);    // chân echo sẽ nhận tín hiệu
   pinMode(TRIG2,OUTPUT);   // chân trig sẽ phát tín hiệu
   pinMode(ECHO2,INPUT);    // chân echo sẽ nhận tín hiệu
-  attachInterrupt(digitalPinToInterrupt(ENCODER_1), encoder_1_pulses_count, RISING);
-  attachInterrupt(digitalPinToInterrupt(ENCODER_2), encoder_2_pulses_count, RISING);
   Serial.begin(9600);
   delay(3000);
   read_sensors();
@@ -113,13 +93,7 @@ void loop() {
 //  read_sensors();
 //  Serial.print(front_ultra_dis);
 //  Serial.print(" ");
-//  Serial.print(front_dis);
-//  Serial.print(" ");
 //  Serial.print(front_right_dis);
-//  Serial.print(" ");
-//  Serial.print(right_top_dis);
-//  Serial.print(" ");
-//  Serial.print(right_bottom_dis);
 //  Serial.print(" ");
 //  Serial.println(right_ultra_dis);
 } 
@@ -130,24 +104,22 @@ void START_POINT_func() {
   do {
     read_sensors();
   } while (front_right_dis == 15);
-  prev_state = START_POINT;
   state = AWAY_WALL;
 }
 
 void AWAY_WALL_func() {
   rotation_tune = 1;
   do {
-    motors_right(80, constrain(10 + 10 * rotation_tune, 20, 40));
+    motors_right(80, constrain(20 + 15 * rotation_tune, 20, 120));
     read_sensors();
     if (distance_diff <= right_ultra_dis - 9) {
       rotation_tune++;
     } else rotation_tune--;
     distance_diff == right_ultra_dis - 9;
-  } while (right_ultra_dis > 9 && front_right_dis >= 18 && right_ultra_dis < 20 && front_ultra_dis > 18);
-  prev_state = AWAY_WALL;
+  } while (right_ultra_dis > 9 && front_right_dis >= 18 && front_right_dis != 81 && right_ultra_dis < 90 && front_ultra_dis > 18);
   if (front_ultra_dis <= 18) {
     state = SEE_OBSTACLE;
-  } else if (right_ultra_dis > 20 && front_right_dis > 70) {
+  } else if (right_ultra_dis > 90 && front_right_dis > 70) {
     state = GET_LOST;
   } else if (right_ultra_dis == 10) {
     state = PARALLEL_WALL;
@@ -165,11 +137,10 @@ void TOWARD_WALL_func() {
       rotation_tune++;
     } else rotation_tune--;
     distance_diff == 18 - front_right_dis;
-  } while (front_right_dis < 18 && front_ultra_dis > 18 && right_ultra_dis < 20);
-  prev_state = TOWARD_WALL;
+  } while (front_right_dis < 18 && front_ultra_dis > 18 && right_ultra_dis < 90);
   if (front_ultra_dis <= 18) {
     state = SEE_OBSTACLE;
-  } else if (right_ultra_dis > 20 && front_right_dis > 70) {
+  } else if (right_ultra_dis > 90 && front_right_dis > 70) {
     state = GET_LOST;
   } else if (right_ultra_dis == 10) {
     state = PARALLEL_WALL;
@@ -180,10 +151,9 @@ void TOWARD_WALL_func() {
 
 void PARALLEL_WALL_func() {
   motors_forward(80);
-  do {
+  do {0
     read_sensors();
   } while (right_ultra_dis == 9 && front_right_dis <= 18 && front_ultra_dis > 18);
-  prev_state = PARALLEL_WALL;
   if (front_ultra_dis <= 18) {
     state = SEE_OBSTACLE;
   } else if (right_ultra_dis > 20 && front_right_dis > 70) {
@@ -208,20 +178,16 @@ void SEE_OBSTACLE_func() {
   }
   motors_hard_left(120, 150);
   do {
-    delay(200);
     read_sensors();
-  } while (front_ultra_dis < 120 || front_right_dis < 4);
-   delay(200);
+  } while (front_ultra_dis < 90 || front_right_dis < 20);
   state = PARALLEL_WALL;
 }
 
 void GET_LOST_func() {
   motors_hard_left(120, 150);
   do {
-    delay(200);
     read_sensors();
-  } while ((front_right_dis > 70 || front_ultra_dis < 120) && right_ultra_dis > 20);
-  delay(200);
+  } while (front_right_dis < 20 || front_ultra_dis < 90 || front_right_dis == 81) ;
   state = AWAY_WALL;
 }
 
@@ -231,15 +197,7 @@ int handle_sensors_noise(int val) {
 }
 
 void read_sensors() {
-  read_ultra_sensors();
-  read_ir_sensors();
-}
-void read_ir_sensors() {
-  front_dis = constrain(handle_sensors_noise(front_sensor.distance()), 15, 60);
   front_right_dis = constrain(handle_sensors_noise(front_right_sensor.distance()), 14, 81);
-}
-
-void read_ultra_sensors() {
   unsigned long duration; // biến đo thời gian
   int distance;           // biến lưu khoảng cách
   /* Phát xung từ chân trig */
@@ -255,7 +213,7 @@ void read_ultra_sensors() {
   // Tính khoảng cách đến vật.
   distance = int(duration/2/29.412);
   front_ultra_dis = constrain(distance, 4, 120);
-  delay(1);
+  delay(3);
     /* Phát xung từ chân trig */
   digitalWrite(TRIG2,0);   // tắt chân trig
   delayMicroseconds(2);
@@ -271,18 +229,18 @@ void read_ultra_sensors() {
   right_ultra_dis = constrain(distance, 4, 120);
 }
 
-void encoder_1_pulses_count() {
-    if (encoder_1_pulses++ == 374) {
-      encoder_1_pulses = 0;
-      encoder_1_avg_time = millis() - encoder_1_start_time;
-      encoder_1_start_time = millis();
-    }
-}
-
-void encoder_2_pulses_count() {
-    if (encoder_2_pulses++ == 374) {
-      encoder_2_pulses = 0;
-      encoder_2_avg_time = millis() - encoder_2_start_time;
-      encoder_2_start_time = millis();
-    }
-}
+//void encoder_1_pulses_count() {
+//    if (encoder_1_pulses++ == 374) {
+//      encoder_1_pulses = 0;
+//      encoder_1_avg_time = millis() - encoder_1_start_time;
+//      encoder_1_start_time = millis();
+//    }
+//}
+//
+//void encoder_2_pulses_count() {
+//    if (encoder_2_pulses++ == 374) {
+//      encoder_2_pulses = 0;
+//      encoder_2_avg_time = millis() - encoder_2_start_time;
+//      encoder_2_start_time = millis();
+//    }
+//}
