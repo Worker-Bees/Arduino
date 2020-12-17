@@ -103,14 +103,14 @@ void START_POINT_func() {
   motors_left(80, 20);
   do {
     read_sensors();
-  } while (front_right_dis == 15);
+  } while (front_right_dis < 18);
   state = AWAY_WALL;
 }
 
 void AWAY_WALL_func() {
   rotation_tune = 1;
   do {
-    motors_right(80, constrain(20 + 15 * rotation_tune, 20, 120));
+    motors_right(80, constrain(20 + 15 * rotation_tune, 20, 80));
     read_sensors();
     if (distance_diff <= right_ultra_dis - 9) {
       rotation_tune++;
@@ -142,7 +142,7 @@ void TOWARD_WALL_func() {
     state = SEE_OBSTACLE;
   } else if (right_ultra_dis > 90 && front_right_dis > 70) {
     state = GET_LOST;
-  } else if (right_ultra_dis == 10) {
+  } else if (right_ultra_dis == 9) {
     state = PARALLEL_WALL;
   } else {
     state = AWAY_WALL;
@@ -156,11 +156,11 @@ void PARALLEL_WALL_func() {
   } while (right_ultra_dis == 9 && front_right_dis <= 18 && front_ultra_dis > 18);
   if (front_ultra_dis <= 18) {
     state = SEE_OBSTACLE;
-  } else if (right_ultra_dis > 20 && front_right_dis > 70) {
+  } else if (right_ultra_dis > 90 && front_right_dis > 70) {
     state = GET_LOST;
-  } else if (right_ultra_dis <  10) {
+  } else if (right_ultra_dis <  9) {
     state = TOWARD_WALL;
-  } else if (right_ultra_dis > 10) {
+  } else if (right_ultra_dis > 9) {
     state = AWAY_WALL;
   } else {
     state = TOWARD_WALL;
