@@ -116,8 +116,8 @@ void AWAY_WALL_func() {
       rotation_tune++;
     } else rotation_tune--;
     distance_diff == right_ultra_dis - 9;
-  } while (right_ultra_dis > 9 && front_right_dis >= 18 && front_right_dis != 81 && right_ultra_dis < 90 && front_ultra_dis > 18);
-  if (front_ultra_dis <= 18) {
+  } while (right_ultra_dis > 9 && front_right_dis >= 18 && front_right_dis != 81 && right_ultra_dis < 90 && front_ultra_dis > 22);
+  if (front_ultra_dis <= 22) {
     state = SEE_OBSTACLE;
   } else if (right_ultra_dis > 90 && front_right_dis > 70) {
     state = GET_LOST;
@@ -137,8 +137,8 @@ void TOWARD_WALL_func() {
       rotation_tune++;
     } else rotation_tune--;
     distance_diff == 18 - front_right_dis;
-  } while (front_right_dis < 18 && front_ultra_dis > 18 && right_ultra_dis < 90);
-  if (front_ultra_dis <= 18) {
+  } while (front_right_dis < 18 && front_ultra_dis > 22 && right_ultra_dis < 90);
+  if (front_ultra_dis <= 22) {
     state = SEE_OBSTACLE;
   } else if (right_ultra_dis > 90 && front_right_dis > 70) {
     state = GET_LOST;
@@ -153,8 +153,8 @@ void PARALLEL_WALL_func() {
   motors_forward(80);
   do {
     read_sensors();
-  } while (right_ultra_dis == 9 && front_right_dis <= 18 && front_ultra_dis > 18);
-  if (front_ultra_dis <= 18) {
+  } while (right_ultra_dis == 9 && front_right_dis <= 18 && front_ultra_dis > 22);
+  if (front_ultra_dis <= 22) {
     state = SEE_OBSTACLE;
   } else if (right_ultra_dis > 90 && front_right_dis > 70) {
     state = GET_LOST;
@@ -172,12 +172,12 @@ void SEE_OBSTACLE_func() {
     motors_stop();
     do {
       read_sensors();
-    } while(front_ultra_dis < 18);
+    } while(front_ultra_dis < 22);
       delay(4000); 
   }
   read_sensors();
-  if (front_ultra_dis < 20) {
-    motors_hard_left(120, 150);
+  if (front_ultra_dis <= 22) {
+    motors_hard_left(120, 255);
     do {
       read_sensors();
     } while (front_ultra_dis < 60 || front_right_dis < 18);
@@ -187,7 +187,7 @@ void SEE_OBSTACLE_func() {
 }
 
 void GET_LOST_func() {
-  motors_hard_left(120, 150);
+  motors_hard_left(120, 255);
   do {
     read_sensors();
   } while (front_right_dis < 18 || front_ultra_dis < 60 || front_right_dis == 81) ;
