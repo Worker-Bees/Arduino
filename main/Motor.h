@@ -11,7 +11,7 @@
 #define ENCODER_2 2
 #define ENCODER_1 3
 #define MAX_SPEED 255 //từ 0-255
-#define MIN_SPEED 0
+#define MIN_SPEED 30
 
 void setup_motors();
 void motors_forward(int speed);
