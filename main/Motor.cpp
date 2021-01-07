@@ -43,8 +43,8 @@ void motors_right(int speed, int angle) {
 }
 
 void motors_left(int speed, int angle) {
-  int left_speed = constrain(255 - speed + angle, 30, MAX_SPEED);
-  int right_speed = constrain(255 - speed, MIN_SPEED, MAX_SPEED);
+  int left_speed = constrain(255 - speed, MIN_SPEED, MAX_SPEED);
+  int right_speed = constrain(255 - speed - angle, MIN_SPEED, MAX_SPEED);
   digitalWrite(DIGITAL_MOTOR_1, HIGH);
   analogWrite(ANALOG_MOTOR_1, left_speed);
   digitalWrite(DIGITAL_MOTOR_2, HIGH);
