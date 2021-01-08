@@ -105,10 +105,14 @@ void WALL_TRACKING_func() {
   const int speed = 60;
   do {
     read_sensors();
-    distance_diff = front_right_dis - 18;
-    if (prev_distance_diff != distance_diff) {
-       motors_forward(constrain(speed + 10 * distance_diff, 40, 120), speed);
-       prev_distance_diff = distance_diff;
+    if (front_right_dis <= 70) {
+      distance_diff = front_right_dis - 18;
+      if (prev_distance_diff != distance_diff) {
+         motors_forward(constrain(speed + 10 * distance_diff, 40, 120), speed);
+         prev_distance_diff = distance_diff;
+      }
+    } else {
+         motors_forward(constrain(speed + 10 * distance_diff, 41, 120), speed);
     }
   } while ((front_right_dis <= 70 || right_ultra_dis <= 90) && front_ultra_dis > 25);
   if (front_ultra_dis <= 25) 
