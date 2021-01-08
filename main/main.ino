@@ -5,8 +5,8 @@
 #define FRONT_RIGHT_SENSOR A1 
 #define RIGHT_TOP_SENSOR A2 
 #define RIGHT_BOTTOM_SENSOR A3
-#define ECHO 13
-#define TRIG 12
+#define ECHO 12
+#define TRIG 13
 #define TRIG2 8
 #define ECHO2 9
 
@@ -100,7 +100,7 @@ void loop() {
 
 
 void START_POINT_func() {
-  motors_left(80, 20);
+  motors_left(60, 20);
   do {
     read_sensors();
   } while (front_right_dis < 18);
@@ -110,7 +110,7 @@ void START_POINT_func() {
 void AWAY_WALL_func() {
   rotation_tune = 1;
   do {
-    motors_right(80, constrain(20 + 15 * rotation_tune, 20, 80));
+    motors_right(60, constrain(20 + 15 * rotation_tune, 20, 60));
     read_sensors();
     if (distance_diff <= right_ultra_dis - 9) {
       rotation_tune++;
@@ -131,7 +131,7 @@ void AWAY_WALL_func() {
 void TOWARD_WALL_func() {
   rotation_tune = 1;
   do {
-    motors_left(80, constrain(10 + 10 * rotation_tune, 20, 60));
+    motors_left(60, constrain(10 + 10 * rotation_tune, 20, 40));
     read_sensors();
     if (distance_diff <= 18 - front_right_dis) {
       rotation_tune++;
@@ -150,7 +150,7 @@ void TOWARD_WALL_func() {
 }
 
 void PARALLEL_WALL_func() {
-  motors_forward(80);
+  motors_forward(60);
   do {
     read_sensors();
   } while (right_ultra_dis == 9 && front_right_dis <= 18 && front_ultra_dis > 18);
@@ -177,7 +177,7 @@ void SEE_OBSTACLE_func() {
   }
   read_sensors();
   if (front_ultra_dis < 20) {
-    motors_hard_left(120, 150);
+    motors_hard_left(120, 80);
     do {
       read_sensors();
     } while (front_ultra_dis < 60 || front_right_dis < 18);
@@ -187,7 +187,7 @@ void SEE_OBSTACLE_func() {
 }
 
 void GET_LOST_func() {
-  motors_hard_left(120, 150);
+   motors_hard_left(120, 80);
   do {
     read_sensors();
   } while (front_right_dis < 18 || front_ultra_dis < 60 || front_right_dis == 81) ;
