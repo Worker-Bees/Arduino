@@ -39,6 +39,7 @@ void encoder_2_pulses_count();
 void WALL_TRACKING_func();
 void SEE_OBSTACLE_func();
 void GET_LOST_func();
+void MANUAL_CONTROL_func();
 
 volatile int front_ultra_dis = 0;
 volatile int front_right_dis = 0;
@@ -55,6 +56,7 @@ StateMachine state_machine[] =
 };
 
 State state = WALL_TRACKING;
+char command;
 
 void setup() { 
   // put your setup code here, to run once:
@@ -65,14 +67,15 @@ void setup() {
   pinMode(ECHO2,INPUT);    // chân echo sẽ nhận tín hiệu
   Serial.begin(9600);
   delay(3000);
-  motors_forward(60, 60);
+//  motors_forward(60, 60);
   read_sensors();
 } 
 
 void loop() {
-   if (state < NUM_STATES) {
-      (*state_machine[state].function) ();
-   }
+//     if (state < NUM_STATES) {
+//        (*state_machine[state].function) ();
+//     }
+   MANUAL_CONTROL_func();
 //  read_sensors();
 //  Serial.print(front_ultra_dis);
 //  Serial.print(" ");
@@ -81,6 +84,22 @@ void loop() {
 //  Serial.println(right_ultra_dis);
 } 
 
+void MANUAL_CONTROL_func() {
+  if (Serial.available() > 0) {
+    command = Serial.read();
+    switch (command) {
+      case 'w': motors_forward(60,60); break;
+      case 'q': motors_forward(41,60); break;
+      case 'e': motors_forward(60,41); break;
+      case 'a': motors_hard_left(80,80); break;
+      case 'd': motors_hard_right(80,80); break;
+      case 's': motors_backward(60,60); break;
+      case 'z': motors_backward(41,60); break;
+      case 'c': motors_backward(60,41); break;
+      case 'x': motors_stop(); break;
+    }
+  }
+}
 
 void WALL_TRACKING_func() {
   const int speed = 60;
