@@ -57,6 +57,7 @@ StateMachine state_machine[] =
 
 State state = WALL_TRACKING;
 char command;
+int command_speed = 0;
 
 void setup() { 
   // put your setup code here, to run once:
@@ -88,14 +89,16 @@ void MANUAL_CONTROL_func() {
   if (Serial.available() > 0) {
     command = Serial.read();
     switch (command) {
-      case 'w': motors_forward(60,60); break;
-      case 'q': motors_forward(41,60); break;
-      case 'e': motors_forward(60,41); break;
-      case 'a': motors_hard_left(80,80); break;
-      case 'd': motors_hard_right(80,80); break;
-      case 's': motors_backward(60,60); break;
-      case 'z': motors_backward(41,60); break;
-      case 'c': motors_backward(60,41); break;
+      case 'w': motors_forward(60 + command_speed, 60 + command_speed); break;
+      case 'q': motors_forward(41 + command_speed, 70 + command_speed); break;
+      case 'e': motors_forward(70 + command_speed, 41 + command_speed); break;
+      case 'a': motors_hard_left(120,120); break;
+      case 'd': motors_hard_right(120,120); break;
+      case 's': motors_backward(60 + command_speed, 60 + command_speed); break;
+      case 'z': motors_backward(41 + command_speed, 70 + command_speed); break;
+      case 'c': motors_backward(70 + command_speed, 41 + command_speed); break;
+      case '+': command_speed += 10; break;
+      case '-': command_speed -= 10; break;
       case 'x': motors_stop(); break;
     }
   }
