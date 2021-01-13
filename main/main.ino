@@ -141,11 +141,7 @@ void setup() {
 
 void switch_mode() {
   motors_stop();
-  if (manual_mode == 1) {
-    manual_mode = 0;
-  } else {
-    manual_mode = 1;
-  }
+  manual_mode = 1;
 }
 
 void loop() {
@@ -183,6 +179,7 @@ void MANUAL_CONTROL_func() {
         case 'j': servo_up(); break;
         case 'k': servo_down(); break;
         case 'x': motors_stop(); break;
+        case 'm': motors_stop(); manual_mode = 0;
       }
       if (command == '~') break;
     }
