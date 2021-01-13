@@ -39,6 +39,7 @@ void WALL_TRACKING_func();
 void SEE_OBSTACLE_func();
 void GET_LOST_func();
 void MANUAL_CONTROL_func();
+void switch_mode();
 
 volatile int front_ultra_dis = 0;
 volatile int front_right_dis = 0;
@@ -59,6 +60,24 @@ volatile char command;
 volatile int command_speed = 0;
 int lenMicroSecondsOfPeriod = 25 * 1000; // 25 milliseconds (ms)
 int current = 0;
+volatile int manual_mode = 0;
+void servo_initialize() {
+  for(int i = 0; i <= 3700; i+=10){
+       
+         digitalWrite(SERVO_PIN, HIGH);
+
+         // Delay for the length of the pulse
+         delayMicroseconds(i);
+
+         // Turn the voltage low for the remainder of the pulse
+         digitalWrite(SERVO_PIN, LOW);
+
+         // Delay this loop for the remainder of the period so we don't
+         // send the next signal too soon or too late
+         delayMicroseconds(lenMicroSecondsOfPeriod - i); 
+  }
+}
+
 void servo_up() {
  int end = constrain(current + 300, 700, 3700);
  for(current; current <= end; current+=10){
@@ -115,16 +134,27 @@ void setup() {
   pinMode(SERVO_PIN, OUTPUT);
   Serial.begin(9600);
   delay(1000);
-//  attachInterrupt(digitalPinToInterrupt(CONTROL_PIN), MANUAL_CONTROL_func, RISING);
-  motors_forward(120, 120);
+  attachInterrupt(digitalPinToInterrupt(CONTROL_PIN), switch_mode, RISING);
+  servo_initialize();
   read_sensors();
 } 
 
+void switch_mode() {
+  motors_stop();
+  if (manual_mode == 1) {
+    manual_mode = 0;
+  } else {
+    manual_mode = 1;
+  }
+}
+
 void loop() {
-//   if (state < NUM_STATES) {
-//      (*state_machine[state].function) ();
-//   }
-   MANUAL_CONTROL_func();
+   if (manual_mode == 1) { 
+      MANUAL_CONTROL_func();
+   } else if (state < NUM_STATES) {
+      (*state_machine[state].function) ();
+   }
+//   MANUAL_CONTROL_func();
 //  read_sensors();
 //  Serial.print(front_ultra_dis);
 //  Serial.print(" ");
@@ -135,13 +165,14 @@ void loop() {
 
 void MANUAL_CONTROL_func() {
 //  digitalWrite(LED_BUILTIN, LOW);
-  while(true){
+  motors_stop();
+  while(manual_mode == 1){
     if (Serial.available() > 0) {
       command = Serial.read();
       switch (command) {
-        case 'w': motors_forward(60 + command_speed, 60 + command_speed); break;
-        case 'q': motors_forward(41 + command_speed, 80 + command_speed); break;
-        case 'e': motors_forward(80 + command_speed, 41 + command_speed); break;
+        case 'w': motors_forward(constrain(60 + command_speed, 41, 255), 60 + command_speed); break;
+        case 'q': motors_forward(constrain(41 + command_speed, 41, 255), 80 + command_speed); break;
+        case 'e': motors_forward(constrain(80 + command_speed, 41, 255), 41 + command_speed); break;
         case 'a': motors_hard_left(80 + command_speed, 120 + command_speed); break;
         case 'd': motors_hard_right(120 + command_speed, 80 + command_speed); break;
         case 's': motors_backward(60 + command_speed, 60 + command_speed); break;
@@ -171,7 +202,7 @@ void WALL_TRACKING_func() {
     } else {
          motors_forward(constrain(speed + 10 * distance_diff, 41, 120), speed);
     }
-  } while ((front_right_dis <= 70 || right_ultra_dis <= 90) && front_ultra_dis > 25);
+  } while ((front_right_dis <= 70 || right_ultra_dis <= 90) && front_ultra_dis > 25 && manual_mode == 0);
   if (front_ultra_dis <= 25) 
     state = SEE_OBSTACLE;
   else if (right_ultra_dis > 90 && front_right_dis > 70) 
@@ -185,7 +216,7 @@ void SEE_OBSTACLE_func() {
     motors_stop();
     do {
       read_sensors();
-    } while(front_ultra_dis <= 25);
+    } while(front_ultra_dis <= 25 && manual_mode == 0);
       delay(3000); 
   }
   read_sensors();
@@ -193,7 +224,7 @@ void SEE_OBSTACLE_func() {
     motors_hard_left(120, 100);
     do {
       read_sensors();
-    } while (front_ultra_dis < 50 || front_right_dis <= 22);
+    } while (front_ultra_dis < 50 || front_right_dis <= 22 && manual_mode == 0);
   }
   state = WALL_TRACKING;
 }
@@ -202,7 +233,7 @@ void GET_LOST_func() {
   motors_hard_left(120, 100);
   do {
     read_sensors();
-  } while (front_right_dis <= 22 || front_ultra_dis < 50 || front_right_dis == 81) ;
+  } while (front_right_dis <= 22 || front_ultra_dis < 50 || front_right_dis == 81 && manual_mode == 0) ;
   state = WALL_TRACKING;
 }
 
