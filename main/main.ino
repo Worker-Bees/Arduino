@@ -9,12 +9,11 @@
 #define TRIG 13
 #define TRIG2 8
 #define ECHO2 9
+#define CONTROL_PIN 3
+#define SERVO_PIN 2
 
 #define SENSOR_MODEL 1080 
-SharpIR front_sensor(FRONT_SENSOR, SENSOR_MODEL); 
 SharpIR front_right_sensor(FRONT_RIGHT_SENSOR, SENSOR_MODEL); 
-SharpIR right_top_sensor(RIGHT_TOP_SENSOR, SENSOR_MODEL); 
-SharpIR right_bottom_sensor(RIGHT_BOTTOM_SENSOR, SENSOR_MODEL); 
 
 // State machine implementation
 typedef enum
@@ -55,9 +54,55 @@ StateMachine state_machine[] =
   { GET_LOST, GET_LOST_func},
 };
 
-State state = WALL_TRACKING;
-char command;
-int command_speed = 0;
+volatile State state = WALL_TRACKING;
+volatile char command;
+volatile int command_speed = 0;
+int lenMicroSecondsOfPeriod = 25 * 1000; // 25 milliseconds (ms)
+int current = 0;
+void servo_up() {
+ int end = constrain(current + 300, 700, 3700);
+ for(current; current <= end; current+=10){
+         // Servos work by sending a 25 ms pulse.  
+         // 0.7 ms at the start of the pulse will turn the servo to the 0 degree position
+         // 2.2 ms at the start of the pulse will turn the servo to the 90 degree position 
+         // 3.7 ms at the start of the pulse will turn the servo to the 180 degree position 
+         // Turn voltage high to start the period and pulse
+         digitalWrite(SERVO_PIN, HIGH);
+
+         // Delay for the length of the pulse
+         delayMicroseconds(current);
+
+         // Turn the voltage low for the remainder of the pulse
+         digitalWrite(SERVO_PIN, LOW);
+
+         // Delay this loop for the remainder of the period so we don't
+         // send the next signal too soon or too late
+         delayMicroseconds(lenMicroSecondsOfPeriod - current); 
+  }
+}
+
+void servo_down() {
+  int first = constrain(current - 300, 700, 3700);
+  for(current; current >= first; current-=10){
+       // Servos work by sending a 20 ms pulse.
+       // 0.7 ms at the start of the pulse will turn the servo to the 0 degree position
+       // 2.2 ms at the start of the pulse will turn the servo to the 90 degree position
+       // 3.7 ms at the start of the pulse will turn the servo to the 180 degree position
+       // Turn voltage high to start the period and pulse
+       digitalWrite(SERVO_PIN, HIGH);
+
+       // Delay for the length of the pulse
+       delayMicroseconds(current);
+
+       // Turn the voltage low for the remainder of the pulse
+       digitalWrite(SERVO_PIN, LOW);
+
+       // Delay this loop for the remainder of the period so we don't
+       // send the next signal too soon or too late
+       delayMicroseconds(lenMicroSecondsOfPeriod - current);
+  }
+}
+
 
 void setup() { 
   // put your setup code here, to run once:
@@ -66,16 +111,19 @@ void setup() {
   pinMode(ECHO,INPUT);    // chân echo sẽ nhận tín hiệu
   pinMode(TRIG2,OUTPUT);   // chân trig sẽ phát tín hiệu
   pinMode(ECHO2,INPUT);    // chân echo sẽ nhận tín hiệu
+  pinMode(CONTROL_PIN, INPUT);
+  pinMode(SERVO_PIN, OUTPUT);
   Serial.begin(9600);
-  delay(3000);
-//  motors_forward(60, 60);
+  delay(1000);
+//  attachInterrupt(digitalPinToInterrupt(CONTROL_PIN), MANUAL_CONTROL_func, RISING);
+  motors_forward(120, 120);
   read_sensors();
 } 
 
 void loop() {
-//     if (state < NUM_STATES) {
-//        (*state_machine[state].function) ();
-//     }
+//   if (state < NUM_STATES) {
+//      (*state_machine[state].function) ();
+//   }
    MANUAL_CONTROL_func();
 //  read_sensors();
 //  Serial.print(front_ultra_dis);
@@ -86,20 +134,26 @@ void loop() {
 } 
 
 void MANUAL_CONTROL_func() {
-  if (Serial.available() > 0) {
-    command = Serial.read();
-    switch (command) {
-      case 'w': motors_forward(60 + command_speed, 60 + command_speed); break;
-      case 'q': motors_forward(41 + command_speed, 70 + command_speed); break;
-      case 'e': motors_forward(70 + command_speed, 41 + command_speed); break;
-      case 'a': motors_hard_left(120,120); break;
-      case 'd': motors_hard_right(120,120); break;
-      case 's': motors_backward(60 + command_speed, 60 + command_speed); break;
-      case 'z': motors_backward(41 + command_speed, 70 + command_speed); break;
-      case 'c': motors_backward(70 + command_speed, 41 + command_speed); break;
-      case '+': command_speed += 10; break;
-      case '-': command_speed -= 10; break;
-      case 'x': motors_stop(); break;
+//  digitalWrite(LED_BUILTIN, LOW);
+  while(true){
+    if (Serial.available() > 0) {
+      command = Serial.read();
+      switch (command) {
+        case 'w': motors_forward(60 + command_speed, 60 + command_speed); break;
+        case 'q': motors_forward(41 + command_speed, 80 + command_speed); break;
+        case 'e': motors_forward(80 + command_speed, 41 + command_speed); break;
+        case 'a': motors_hard_left(80 + command_speed, 120 + command_speed); break;
+        case 'd': motors_hard_right(120 + command_speed, 80 + command_speed); break;
+        case 's': motors_backward(60 + command_speed, 60 + command_speed); break;
+        case 'z': motors_backward(41 + command_speed, 80 + command_speed); break;
+        case 'c': motors_backward(80 + command_speed, 41 + command_speed); break;
+        case '+': command_speed += 10; break;
+        case '-': command_speed -= 10; break;
+        case 'j': servo_up(); break;
+        case 'k': servo_down(); break;
+        case 'x': motors_stop(); break;
+      }
+      if (command == '~') break;
     }
   }
 }

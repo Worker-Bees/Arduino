@@ -7,9 +7,6 @@ void setup_motors() {
   pinMode(DIGITAL_MOTOR_2_A, OUTPUT);
   pinMode(DIGITAL_MOTOR_2_B, OUTPUT);
   pinMode(ANALOG_MOTOR_2, OUTPUT);
-  pinMode(ENCODER_2, INPUT);
-  pinMode(ENCODER_1, INPUT);
-  pinMode(LED_BUILTIN, OUTPUT);
 }
 
 void motors_stop() {
