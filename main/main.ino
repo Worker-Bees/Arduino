@@ -1,10 +1,7 @@
 #include "Motor.h"
 #include <SharpIR.h> 
 
-#define FRONT_SENSOR A0
-#define FRONT_RIGHT_SENSOR A1 
-#define RIGHT_TOP_SENSOR A2 
-#define RIGHT_BOTTOM_SENSOR A3
+#define FRONT_RIGHT_SENSOR A0 
 #define ECHO 12
 #define TRIG 13
 #define TRIG2 8
@@ -187,19 +184,19 @@ void MANUAL_CONTROL_func() {
 }
 
 void WALL_TRACKING_func() {
-  const int speed = 60;
+  const int speed = 70;
   do {
     read_sensors();
     if (front_right_dis <= 70) {
-      distance_diff = front_right_dis - 18;
+      distance_diff = front_right_dis - 28;
       if (prev_distance_diff != distance_diff) {
          motors_forward(constrain(speed + 10 * distance_diff, 40, 120), speed);
          prev_distance_diff = distance_diff;
       }
     } else {
-         motors_forward(constrain(speed + 10 * distance_diff, 41, 120), speed);
+         motors_forward(constrain(speed + 10 * prev_distance_diff, 41, 120), speed);
     }
-  } while ((front_right_dis <= 70 || right_ultra_dis <= 90) && front_ultra_dis > 25 && manual_mode == 0);
+  } while ((front_right_dis <= 70 || right_ultra_dis <= 40) && front_ultra_dis > 25 && manual_mode == 0);
   if (front_ultra_dis <= 25) 
     state = SEE_OBSTACLE;
   else if (right_ultra_dis > 90 && front_right_dis > 70) 
@@ -218,16 +215,16 @@ void SEE_OBSTACLE_func() {
   }
   read_sensors();
   if (front_ultra_dis <= 25) {
-    motors_hard_left(120, 100);
+    motors_hard_left(140, 130);
     do {
       read_sensors();
-    } while (front_ultra_dis < 50 || front_right_dis <= 22 && manual_mode == 0);
+    } while (front_ultra_dis < 50 || front_right_dis <= 30 && manual_mode == 0);
   }
   state = WALL_TRACKING;
 }
 
 void GET_LOST_func() {
-  motors_hard_left(120, 100);
+  motors_hard_left(140, 130);
   do {
     read_sensors();
   } while (front_right_dis <= 22 || front_ultra_dis < 50 || front_right_dis == 81 && manual_mode == 0) ;
