@@ -163,7 +163,7 @@ void MANUAL_CONTROL_func() {
     if (Serial.available() > 0) {
       command = Serial.read();
       switch (command) {
-        case 'w': motors_forward(constrain(60 + command_speed, 41, 255), 60 + command_speed); break;
+        case 'w': motors_forward(constrain(65 + command_speed, 41, 255), 60 + command_speed); break;
         case 'q': motors_forward(constrain(41 + command_speed, 41, 255), 80 + command_speed); break;
         case 'e': motors_forward(constrain(80 + command_speed, 41, 255), 41 + command_speed); break;
         case 'a': motors_hard_left(80 + command_speed, 120 + command_speed); break;

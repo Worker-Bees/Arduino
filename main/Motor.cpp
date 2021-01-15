@@ -10,6 +10,10 @@ void setup_motors() {
 }
 
 void motors_stop() {
+  digitalWrite(DIGITAL_MOTOR_1_A, LOW);
+  digitalWrite(DIGITAL_MOTOR_1_B, LOW);
+  digitalWrite(DIGITAL_MOTOR_2_A, LOW);
+  digitalWrite(DIGITAL_MOTOR_2_B, LOW);
   analogWrite(ANALOG_MOTOR_1, 0);
   analogWrite(ANALOG_MOTOR_2, 0);
 }
