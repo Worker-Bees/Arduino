@@ -36,7 +36,10 @@ void WALL_TRACKING_func();
 void SEE_OBSTACLE_func();
 void GET_LOST_func();
 void MANUAL_CONTROL_func();
-void switch_mode();
+void WAITING_GATE_func();
+void OBJECT_DETECTION_func();
+void adjust_motors();
+void switch_mode(int speed);
 
 volatile int front_ultra_dis = 0;
 volatile int front_right_dis = 0;
@@ -142,7 +145,9 @@ void switch_mode() {
 }
 
 void loop() {
-   if (manual_mode == 1) { 
+   if (manual_mode == 1) {
+      WAITING_GATE_func();
+      OBJECT_DETECTION_func();
       MANUAL_CONTROL_func();
    } else if (state < NUM_STATES) {
       (*state_machine[state].function) ();
@@ -155,6 +160,35 @@ void loop() {
 //  Serial.print(" ");
 //  Serial.println(right_ultra_dis);
 } 
+
+void WAITING_GATE_func() {
+  const int speed = 80;
+  motors_stop();
+  do {
+    read_sensors();
+  } while (front_ultra_dis >= 90);
+  
+  do {
+    read_sensors();
+    if (front_ultra_dis > 25) {
+      adjust_motors(speed);
+    } else motors_stop();
+    motors_forward(80, 70);
+  } while (front_ultra_dis < 70);
+
+  for(int i = 0; i < 2000; i++) {
+    adjust_motors(speed);
+  }
+  motors_stop();
+}
+
+void OBJECT_DETECTION_func() {
+  do {
+    if (Serial.available() > 0) {
+      command = Serial.read();
+    }
+  } while(command != '~');
+}
 
 void MANUAL_CONTROL_func() {
 //  digitalWrite(LED_BUILTIN, LOW);
@@ -183,19 +217,23 @@ void MANUAL_CONTROL_func() {
   }
 }
 
-void WALL_TRACKING_func() {
-  const int speed = 70;
-  do {
-    read_sensors();
-    if (front_right_dis <= 70) {
+void adjust_motors(int speed) {
+  if (front_right_dis <= 70) {
       distance_diff = front_right_dis - 28;
       if (prev_distance_diff != distance_diff) {
          motors_forward(constrain(speed + 10 * distance_diff, 40, 120), speed);
          prev_distance_diff = distance_diff;
       }
-    } else {
+  }else {
          motors_forward(constrain(speed + 10 * prev_distance_diff, 41, 120), speed);
-    }
+  }
+}
+
+void WALL_TRACKING_func() {
+  const int speed = 70;
+  do {
+    read_sensors();
+    adjust_motors(speed);
   } while ((front_right_dis <= 70 || right_ultra_dis <= 40) && front_ultra_dis > 25 && manual_mode == 0);
   if (front_ultra_dis <= 25) 
     state = SEE_OBSTACLE;
