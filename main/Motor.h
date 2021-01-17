@@ -6,10 +6,10 @@
 
 #define DIGITAL_MOTOR_1_A 7
 #define DIGITAL_MOTOR_1_B 6
-#define ANALOG_MOTOR_1 11
+#define ANALOG_MOTOR_1 10
 #define DIGITAL_MOTOR_2_A 4
 #define DIGITAL_MOTOR_2_B 5
-#define ANALOG_MOTOR_2 10
+#define ANALOG_MOTOR_2 9
 #define MAX_SPEED 255 //từ 0-255
 #define MIN_SPEED 0
 

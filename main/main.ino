@@ -2,10 +2,10 @@
 #include <SharpIR.h> 
 
 #define FRONT_RIGHT_SENSOR A0 
-#define ECHO 12
-#define TRIG 13
+#define ECHO 11
+#define TRIG 12
 #define TRIG2 8
-#define ECHO2 9
+#define ECHO2 13
 #define CONTROL_PIN 3
 #define SERVO_PIN 2
 
@@ -29,7 +29,7 @@ typedef struct
 
 
 int handle_sensors_noise(int val);
-void read_sensors();
+void read_sensors(int max_index);
 void encoder_1_pulses_count();
 void encoder_2_pulses_count();
 void WALL_TRACKING_func();
@@ -136,7 +136,7 @@ void setup() {
   delay(1000);
   attachInterrupt(digitalPinToInterrupt(CONTROL_PIN), switch_mode, RISING);
   servo_initialize();
-  read_sensors();
+  read_sensors(5);
 } 
 
 void switch_mode() {
@@ -152,8 +152,8 @@ void loop() {
    } else if (state < NUM_STATES) {
       (*state_machine[state].function) ();
    }
-//   MANUAL_CONTROL_func();
-//  read_sensors();
+//   MANUAL_CONTROL_func();/
+//  read_sensors(20);
 //  Serial.print(front_ultra_dis);
 //  Serial.print(" ");
 //  Serial.print(front_right_dis);
@@ -162,36 +162,44 @@ void loop() {
 } 
 
 void WAITING_GATE_func() {
-  const int speed = 80;
+  const int speed = 75;
   motors_stop();
+  Serial.print("h1");
   do {
-    read_sensors();
-  } while (front_ultra_dis >= 90);
-  
+    read_sensors(20);
+  } while (front_ultra_dis >= 60);
+  Serial.print("h2");
   do {
-    read_sensors();
-    if (front_ultra_dis > 25) {
+    read_sensors(5);
+    if (front_ultra_dis > 30) {
       adjust_motors(speed);
     } else motors_stop();
-    motors_forward(80, 70);
-  } while (front_ultra_dis < 70);
-
-  for(int i = 0; i < 2000; i++) {
+  } while (front_ultra_dis < 60);
+  Serial.print("h3");
+  do {
+    read_sensors(5);
     adjust_motors(speed);
-  }
+    if (Serial.available()) {
+      command = Serial.read();
+      Serial.print("receive---");
+    }
+  } while (command != 'o');
+  Serial.print("h4");
   motors_stop();
 }
 
 void OBJECT_DETECTION_func() {
+  motors_stop();
   do {
     if (Serial.available() > 0) {
       command = Serial.read();
     }
-  } while(command != '~');
+  } while(command != '!');
 }
 
 void MANUAL_CONTROL_func() {
 //  digitalWrite(LED_BUILTIN, LOW);
+  Serial.print("mmmmm");
   motors_stop();
   while(manual_mode == 1){
     if (Serial.available() > 0) {
@@ -221,7 +229,7 @@ void adjust_motors(int speed) {
   if (front_right_dis <= 70) {
       distance_diff = front_right_dis - 28;
       if (prev_distance_diff != distance_diff) {
-         motors_forward(constrain(speed + 10 * distance_diff, 40, 120), speed);
+         motors_forward(constrain(speed + 10 * distance_diff, 40, 180), speed);
          prev_distance_diff = distance_diff;
       }
   }else {
@@ -232,7 +240,7 @@ void adjust_motors(int speed) {
 void WALL_TRACKING_func() {
   const int speed = 70;
   do {
-    read_sensors();
+    read_sensors(5);
     adjust_motors(speed);
   } while ((front_right_dis <= 70 || right_ultra_dis <= 40) && front_ultra_dis > 25 && manual_mode == 0);
   if (front_ultra_dis <= 25) 
@@ -247,24 +255,24 @@ void SEE_OBSTACLE_func() {
   if (right_ultra_dis < 20) {
     motors_stop();
     do {
-      read_sensors();
+      read_sensors(5);
     } while(front_ultra_dis <= 25 && manual_mode == 0);
       delay(3000); 
   }
-  read_sensors();
+  read_sensors(5);
   if (front_ultra_dis <= 25) {
-    motors_hard_left(140, 130);
+    motors_hard_left(140, 180);
     do {
-      read_sensors();
+      read_sensors(5);
     } while (front_ultra_dis < 50 || front_right_dis <= 30 && manual_mode == 0);
   }
   state = WALL_TRACKING;
 }
 
 void GET_LOST_func() {
-  motors_hard_left(140, 130);
+  motors_hard_left(140, 180);
   do {
-    read_sensors();
+    read_sensors(5);
   } while (front_right_dis <= 22 || front_ultra_dis < 50 || front_right_dis == 81 && manual_mode == 0) ;
   state = WALL_TRACKING;
 }
@@ -274,35 +282,41 @@ int handle_sensors_noise(int val) {
   else return val;
 }
 
-void read_sensors() {
-  front_right_dis = constrain(handle_sensors_noise(front_right_sensor.distance()), 14, 81);
-  unsigned long duration; // biến đo thời gian
-  int distance;           // biến lưu khoảng cách
-  /* Phát xung từ chân trig */
-  digitalWrite(TRIG,0);   // tắt chân trig
-  delayMicroseconds(2);
-  digitalWrite(TRIG,1);   // phát xung từ chân trig
-  delayMicroseconds(5);   // xung có độ dài 5 microSeconds
-  digitalWrite(TRIG,0);   // tắt chân trig
-  
-  /* Tính toán thời gian */
-  // Đo độ rộng xung HIGH ở chân echo. 
-  duration = pulseIn(ECHO, HIGH);
-  // Tính khoảng cách đến vật.
-  distance = int(duration/2/29.412);
-  front_ultra_dis = constrain(distance, 4, 120);
-  delay(3);
+void read_sensors(int max_index) {
+  int front_temp = 0, front_right_temp = 0, right_temp = 0;
+  for (int i = 0; i < max_index; i++) {
+    front_right_temp += constrain(handle_sensors_noise(front_right_sensor.distance()), 14, 81);
+    unsigned long duration; // biến đo thời gian
+    int distance;           // biến lưu khoảng cách
     /* Phát xung từ chân trig */
-  digitalWrite(TRIG2,0);   // tắt chân trig
-  delayMicroseconds(2);
-  digitalWrite(TRIG2,1);   // phát xung từ chân trig
-  delayMicroseconds(5);   // xung có độ dài 5 microSeconds
-  digitalWrite(TRIG2,0);   // tắt chân trig
-  
-  /* Tính toán thời gian */
-  // Đo độ rộng xung HIGH ở chân echo. 
-  duration = pulseIn(ECHO2, HIGH);
-  // Tính khoảng cách đến vật.
-  distance = int(duration/2/29.412);
-  right_ultra_dis = constrain(distance, 4, 120);
+    digitalWrite(TRIG,0);   // tắt chân trig
+    delayMicroseconds(2);
+    digitalWrite(TRIG,1);   // phát xung từ chân trig
+    delayMicroseconds(5);   // xung có độ dài 5 microSeconds
+    digitalWrite(TRIG,0);   // tắt chân trig
+    
+    /* Tính toán thời gian */
+    // Đo độ rộng xung HIGH ở chân echo. 
+    duration = pulseIn(ECHO, HIGH);
+    // Tính khoảng cách đến vật.
+    distance = int(duration/2/29.412);
+    front_temp += constrain(distance, 4, 500);
+    delay(5);
+      /* Phát xung từ chân trig */
+    digitalWrite(TRIG2,0);   // tắt chân trig
+    delayMicroseconds(2);
+    digitalWrite(TRIG2,1);   // phát xung từ chân trig
+    delayMicroseconds(5);   // xung có độ dài 5 microSeconds
+    digitalWrite(TRIG2,0);   // tắt chân trig
+    
+    /* Tính toán thời gian */
+    // Đo độ rộng xung HIGH ở chân echo. 
+    duration = pulseIn(ECHO2, HIGH);
+    // Tính khoảng cách đến vật.
+    distance = int(duration/2/29.412);
+    right_temp += constrain(distance, 4, 500);
+  }
+  front_ultra_dis = front_temp / max_index;
+  front_right_dis = front_right_temp / max_index;
+  right_ultra_dis = right_temp / max_index;
 }
