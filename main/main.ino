@@ -137,7 +137,7 @@ void setup() {
   delay(1000);
   attachInterrupt(digitalPinToInterrupt(CONTROL_PIN), switch_mode, RISING);
   servo_initialize();
-  read_sensors(3);
+  read_sensors(1);
 } 
 
 void switch_mode() {
@@ -160,7 +160,7 @@ void loop() {
       (*state_machine[state].function) ();
    }
 //   MANUAL_CONTROL_func();
-//  read_sensors(3);
+//  read_sensors(1);
 //  Serial.print(front_ultra_dis);
 //  Serial.print(" ");
 //  Serial.print(front_right_dis);
@@ -180,7 +180,7 @@ void WAITING_GATE_func() {
 
   // waiting for the gate to open
   do {
-    read_sensors(3);
+    read_sensors(1);
     if (front_ultra_dis > 30) {
       adjust_motors(speed);
     } else motors_stop();
@@ -188,7 +188,7 @@ void WAITING_GATE_func() {
 
   // moving until reaching pallet zone
   do {
-    read_sensors(3);
+    read_sensors(1);
     adjust_motors(speed);
     if (Serial.available()) {
       command = Serial.read();
@@ -234,26 +234,27 @@ void MANUAL_CONTROL_func() {
 void adjust_motors(int speed) {
   int rate_of_change = 0;
   if (front_right_dis <= 70) {
-      distance_diff = front_right_dis - 25;
-      if (prev_distance_diff != distance_diff) {
-        motors_forward(constrain(speed + 10 * distance_diff, 40, 180), speed);
-//        if (front_right_dis < 18) motors_forward(40, speed);
-        prev_distance_diff = distance_diff;
+      distance_diff = front_right_dis - 22;
+      motors_forward(constrain(speed + 40 + 20 * distance_diff, 41, 160), speed);
+      if (front_right_dis < 15) {
+        motors_hard_left(120, 130);
+        delay(200);
       }
-  }else {
-         motors_forward(constrain(speed + 10 * prev_distance_diff, 41, 120), speed);
+  } else{
+      distance_diff = right_ultra_dis - 12;
+      motors_forward(constrain(speed + 20 + 20 * distance_diff, 41, 160), speed);
   }
 }
 
 void WALL_TRACKING_func() {
-  const int speed = 70;
+  const int speed = 60;
   do {
-    read_sensors(3);
+    read_sensors(1);
     adjust_motors(speed);
-  } while ((front_right_dis <= 70 || right_ultra_dis <= 60) && front_ultra_dis > 25 && manual_mode == 0);
+  } while ((front_right_dis <= 70 || right_ultra_dis <= 60) && front_ultra_dis > 30 && manual_mode == 0);
   if (front_ultra_dis <= 25) 
     state = SEE_OBSTACLE;
-  else if (right_ultra_dis > 90 && front_right_dis > 70) 
+  else if (right_ultra_dis > 60 && front_right_dis > 70) 
     state = GET_LOST;
   else
     state = WALL_TRACKING;
@@ -263,25 +264,25 @@ void SEE_OBSTACLE_func() {
   if (right_ultra_dis < 20) {
     motors_stop();
     do {
-      read_sensors(3);
+      read_sensors(1);
     } while(front_ultra_dis <= 25 && manual_mode == 0);
       delay(3000); 
   }
-  read_sensors(3);
-  if (front_ultra_dis <= 25) {
-    motors_hard_left(110, 90);
+  read_sensors(1);
+  if (front_ultra_dis <= 30) {
+    motors_hard_left(120, 130);
     do {
-      read_sensors(3);
+      read_sensors(1);
     } while ((front_ultra_dis < 70 || front_right_dis <= 30) && manual_mode == 0);
   }
   state = WALL_TRACKING;
 }
 
 void GET_LOST_func() {
-  motors_hard_left(110, 90);
+  motors_hard_left(120, 150);
   do {
-     read_sensors(3);
-  } while ((front_right_dis <= 22 || front_ultra_dis < 70 || front_right_dis == 81) && manual_mode == 0) ;
+     read_sensors(1);
+  } while ((front_ultra_dis < 70 || front_right_dis > 70) && manual_mode == 0) ;
   state = WALL_TRACKING;
 }
 
@@ -291,11 +292,10 @@ int handle_sensors_noise(int val) {
 }
 
 void read_sensors(int max_index) {
-  int front_temp = 0, front_right_temp = 0, right_temp = 0;
+  int front_temp = 0;
+  unsigned long duration; // biến đo thời gian
+  int distance;           // biến lưu khoảng cách
   for (int i = 0; i < max_index; i++) {
-    front_right_temp += constrain(handle_sensors_noise(front_right_sensor.distance()), 14, 81);
-    unsigned long duration; // biến đo thời gian
-    int distance;           // biến lưu khoảng cách
     /* Phát xung từ chân trig */
     digitalWrite(TRIG,0);   // tắt chân trig
     delayMicroseconds(2);
@@ -311,7 +311,11 @@ void read_sensors(int max_index) {
     front_temp += constrain(distance, 4, 500);
     delay(3);
       /* Phát xung từ chân trig */
-    digitalWrite(TRIG2,0);   // tắt chân trig
+   
+//    delay(2);
+  }
+  front_right_dis = constrain(handle_sensors_noise(front_right_sensor.distance()), 14, 81);
+   digitalWrite(TRIG2,0);   // tắt chân trig
     delayMicroseconds(2);
     digitalWrite(TRIG2,1);   // phát xung từ chân trig
     delayMicroseconds(5);   // xung có độ dài 5 microSeconds
@@ -322,10 +326,6 @@ void read_sensors(int max_index) {
     duration = pulseIn(ECHO2, HIGH);
     // Tính khoảng cách đến vật.
     distance = int(duration/2/29.412);
-    right_temp += constrain(distance, 4, 500);
-    delay(2);
-  }
+  right_ultra_dis = constrain(distance, 4, 500);
   front_ultra_dis = front_temp / max_index;
-  front_right_dis = front_right_temp / max_index;
-  right_ultra_dis = right_temp / max_index;
 }
