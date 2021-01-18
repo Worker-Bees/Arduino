@@ -2,10 +2,10 @@
 #include <SharpIR.h> 
 
 #define FRONT_RIGHT_SENSOR A0 
-#define ECHO 11
-#define TRIG 12
-#define TRIG2 8
-#define ECHO2 13
+#define ECHO 13
+#define TRIG 8
+#define TRIG2 12
+#define ECHO2 11
 #define CONTROL_PIN 3
 #define SERVO_PIN 2
 
@@ -18,7 +18,8 @@ typedef enum
   WALL_TRACKING,
   SEE_OBSTACLE,    
   GET_LOST,
-  NUM_STATES
+  OBJECT_DETECTION,
+  NUM_STATES,
 } State;
 
 typedef struct
@@ -60,7 +61,7 @@ volatile char command;
 volatile int command_speed = 0;
 int lenMicroSecondsOfPeriod = 25 * 1000; // 25 milliseconds (ms)
 int current = 0;
-volatile int manual_mode = 0;
+volatile int manual_mode = -1;
 void servo_initialize() {
   for(int i = 0; i <= 3700; i+=10){
        
@@ -136,24 +137,30 @@ void setup() {
   delay(1000);
   attachInterrupt(digitalPinToInterrupt(CONTROL_PIN), switch_mode, RISING);
   servo_initialize();
-  read_sensors(5);
+  read_sensors(3);
 } 
 
 void switch_mode() {
   motors_stop();
-  manual_mode = 1;
+  if (state == OBJECT_DETECTION) {
+    manual_mode = 2;  
+  } else if (manual_mode == 0) {
+    manual_mode = 1;
+  } else if (manual_mode == -1) {
+    manual_mode = 0;
+  } 
 }
 
 void loop() {
-   if (manual_mode == 1) {
+   if (manual_mode > 0) {
       WAITING_GATE_func();
       OBJECT_DETECTION_func();
       MANUAL_CONTROL_func();
-   } else if (state < NUM_STATES) {
+   } else if (manual_mode == 0 && state < NUM_STATES) {
       (*state_machine[state].function) ();
    }
-//   MANUAL_CONTROL_func();/
-//  read_sensors(20);
+//   MANUAL_CONTROL_func();
+//  read_sensors(3);
 //  Serial.print(front_ultra_dis);
 //  Serial.print(" ");
 //  Serial.print(front_right_dis);
@@ -162,46 +169,47 @@ void loop() {
 } 
 
 void WAITING_GATE_func() {
-  const int speed = 75;
+  const int speed = 60;
   motors_stop();
-  Serial.print("h1");
+  
+  // waiting for the gate to close
   do {
-    read_sensors(20);
-  } while (front_ultra_dis >= 60);
-  Serial.print("h2");
+    read_sensors(50);
+    if (front_ultra_dis < 50) read_sensors(50);
+  } while (front_ultra_dis >= 50);
+
+  // waiting for the gate to open
   do {
-    read_sensors(5);
+    read_sensors(3);
     if (front_ultra_dis > 30) {
       adjust_motors(speed);
     } else motors_stop();
   } while (front_ultra_dis < 60);
-  Serial.print("h3");
+
+  // moving until reaching pallet zone
   do {
-    read_sensors(5);
+    read_sensors(3);
     adjust_motors(speed);
     if (Serial.available()) {
       command = Serial.read();
-      Serial.print("receive---");
     }
   } while (command != 'o');
-  Serial.print("h4");
   motors_stop();
 }
 
 void OBJECT_DETECTION_func() {
   motors_stop();
+  state = OBJECT_DETECTION;
   do {
-    if (Serial.available() > 0) {
-      command = Serial.read();
-    }
-  } while(command != '!');
+
+  } while(manual_mode == 1);
 }
 
 void MANUAL_CONTROL_func() {
 //  digitalWrite(LED_BUILTIN, LOW);
-  Serial.print("mmmmm");
+  Serial.print("abc");
   motors_stop();
-  while(manual_mode == 1){
+  while(manual_mode == 2){
     if (Serial.available() > 0) {
       command = Serial.read();
       switch (command) {
@@ -218,19 +226,19 @@ void MANUAL_CONTROL_func() {
         case 'j': servo_up(); break;
         case 'k': servo_down(); break;
         case 'x': motors_stop(); break;
-        case 'm': motors_stop(); manual_mode = 0;
       }
-      if (command == '~') break;
     }
   }
 }
 
 void adjust_motors(int speed) {
+  int rate_of_change = 0;
   if (front_right_dis <= 70) {
-      distance_diff = front_right_dis - 28;
+      distance_diff = front_right_dis - 25;
       if (prev_distance_diff != distance_diff) {
-         motors_forward(constrain(speed + 10 * distance_diff, 40, 180), speed);
-         prev_distance_diff = distance_diff;
+        motors_forward(constrain(speed + 10 * distance_diff, 40, 180), speed);
+//        if (front_right_dis < 18) motors_forward(40, speed);
+        prev_distance_diff = distance_diff;
       }
   }else {
          motors_forward(constrain(speed + 10 * prev_distance_diff, 41, 120), speed);
@@ -240,9 +248,9 @@ void adjust_motors(int speed) {
 void WALL_TRACKING_func() {
   const int speed = 70;
   do {
-    read_sensors(5);
+    read_sensors(3);
     adjust_motors(speed);
-  } while ((front_right_dis <= 70 || right_ultra_dis <= 40) && front_ultra_dis > 25 && manual_mode == 0);
+  } while ((front_right_dis <= 70 || right_ultra_dis <= 60) && front_ultra_dis > 25 && manual_mode == 0);
   if (front_ultra_dis <= 25) 
     state = SEE_OBSTACLE;
   else if (right_ultra_dis > 90 && front_right_dis > 70) 
@@ -255,25 +263,25 @@ void SEE_OBSTACLE_func() {
   if (right_ultra_dis < 20) {
     motors_stop();
     do {
-      read_sensors(5);
+      read_sensors(3);
     } while(front_ultra_dis <= 25 && manual_mode == 0);
       delay(3000); 
   }
-  read_sensors(5);
+  read_sensors(3);
   if (front_ultra_dis <= 25) {
-    motors_hard_left(140, 180);
+    motors_hard_left(110, 90);
     do {
-      read_sensors(5);
-    } while (front_ultra_dis < 50 || front_right_dis <= 30 && manual_mode == 0);
+      read_sensors(3);
+    } while ((front_ultra_dis < 70 || front_right_dis <= 30) && manual_mode == 0);
   }
   state = WALL_TRACKING;
 }
 
 void GET_LOST_func() {
-  motors_hard_left(140, 180);
+  motors_hard_left(110, 90);
   do {
-    read_sensors(5);
-  } while (front_right_dis <= 22 || front_ultra_dis < 50 || front_right_dis == 81 && manual_mode == 0) ;
+     read_sensors(3);
+  } while ((front_right_dis <= 22 || front_ultra_dis < 70 || front_right_dis == 81) && manual_mode == 0) ;
   state = WALL_TRACKING;
 }
 
@@ -301,7 +309,7 @@ void read_sensors(int max_index) {
     // Tính khoảng cách đến vật.
     distance = int(duration/2/29.412);
     front_temp += constrain(distance, 4, 500);
-    delay(5);
+    delay(3);
       /* Phát xung từ chân trig */
     digitalWrite(TRIG2,0);   // tắt chân trig
     delayMicroseconds(2);
@@ -315,6 +323,7 @@ void read_sensors(int max_index) {
     // Tính khoảng cách đến vật.
     distance = int(duration/2/29.412);
     right_temp += constrain(distance, 4, 500);
+    delay(2);
   }
   front_ultra_dis = front_temp / max_index;
   front_right_dis = front_right_temp / max_index;

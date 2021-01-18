@@ -24,10 +24,10 @@ void motors_forward(int left_speed, int right_speed) {
   if (left_speed == 40) {
     digitalWrite(DIGITAL_MOTOR_1_A, LOW);
     digitalWrite(DIGITAL_MOTOR_1_B, HIGH);
-    analogWrite(ANALOG_MOTOR_1, 150);
+    analogWrite(ANALOG_MOTOR_1, right_speed + 40);
     digitalWrite(DIGITAL_MOTOR_2_A, HIGH);
     digitalWrite(DIGITAL_MOTOR_2_B, LOW);
-    analogWrite(ANALOG_MOTOR_2, 120);
+    analogWrite(ANALOG_MOTOR_2, right_speed);
   } else {
     digitalWrite(DIGITAL_MOTOR_1_A, HIGH);
     digitalWrite(DIGITAL_MOTOR_1_B, LOW);
