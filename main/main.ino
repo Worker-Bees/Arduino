@@ -170,7 +170,7 @@ void loop() {
 } 
 
 void WAITING_GATE_func() {
-  const int speed = 70;
+  const int speed = 50;
   motors_stop();
   
   // waiting for the gate to close
@@ -182,7 +182,7 @@ void WAITING_GATE_func() {
   // waiting for the gate to open
   do {
     read_sensors(1);
-    if (front_ultra_dis > 30) {
+    if (front_ultra_dis > 20) {
       adjust_motors(speed);
     } else motors_stop();
   } while (front_ultra_dis < 60);
@@ -190,8 +190,8 @@ void WAITING_GATE_func() {
   // moving until reaching pallet zone
   do {
     read_sensors(1);
-    adjust_motors(speed);
-    if (Serial.available()) {
+    adjust_motors(80);
+    if (Serial.available() > 0) {
       command = Serial.read();
     }
   } while (command != 'o');
@@ -208,7 +208,6 @@ void OBJECT_DETECTION_func() {
 
 void MANUAL_CONTROL_func() {
 //  digitalWrite(LED_BUILTIN, LOW);
-  Serial.print("abc");
   motors_stop();
   while(manual_mode == 2){
     if (Serial.available() > 0) {
@@ -235,16 +234,16 @@ void MANUAL_CONTROL_func() {
 void adjust_motors(int speed) {
   int rate_of_change = 0;
   if (front_right_dis <= 70) {
-      distance_diff = front_right_dis - 22;
-      motors_forward(constrain(speed + 40 + 20 * distance_diff, 40, 220), speed);
+      distance_diff = front_right_dis - 28;
+      motors_forward(constrain(speed + 60 + 20 * distance_diff, 40, 160), speed);
 //      if (front_right_dis < 15) {
 //        motors_hard_left(150, 150);
 //      } else if (front_right_dis > 50) {
 //        motors_hard_right(150, 150);
 //      }
   } else{
-      distance_diff = right_ultra_dis - 10;
-        motors_forward(constrain(speed + 40 + 40 * distance_diff, 41, 220), speed);
+      distance_diff = right_ultra_dis - 12;
+        motors_forward(constrain(speed + 60 + 20 * distance_diff, 41, 160), speed);
       if (right_ultra_dis < 8) {
         motors_hard_left(120, 150);
       }
@@ -252,30 +251,30 @@ void adjust_motors(int speed) {
 }
 
 void WALL_TRACKING_func() {
-  const int speed = 70;
+  const int speed = 50;
   do {
     read_sensors(1);
     adjust_motors(speed);
-  } while ((front_right_dis <= 70 || right_ultra_dis <= 70) && front_ultra_dis > 20 && manual_mode == 0);
+  } while ((front_right_dis <= 70 || right_ultra_dis <= 90) && front_ultra_dis > 25 && manual_mode == 0);
   if (front_ultra_dis <= 25) 
     state = SEE_OBSTACLE;
-  else if (right_ultra_dis > 80 && front_right_dis > 70) 
+  else if (right_ultra_dis > 90 && front_right_dis > 70) 
     state = GET_LOST;
   else
     state = WALL_TRACKING;
 
 }
 void SEE_OBSTACLE_func() {
-  if (right_ultra_dis < 20) {
+  if (right_ultra_dis < 40) {
     motors_stop();
     do {
       read_sensors(1);
-    } while(front_ultra_dis <= 20 && manual_mode == 0);
+    } while(front_ultra_dis <= 30 && manual_mode == 0);
       delay(3000); 
   }
   read_sensors(1);
-  if (front_ultra_dis <= 20) {
-    motors_hard_left(150, 120);
+  if (front_ultra_dis <= 25) {
+    motors_hard_left(150, 150);
     do {
       read_sensors(1);
     } while ((front_ultra_dis < 70 || right_ultra_dis > 40) && manual_mode == 0);
@@ -284,10 +283,10 @@ void SEE_OBSTACLE_func() {
 }
 
 void GET_LOST_func() {
-  motors_hard_left(150, 120);
+  motors_hard_left(150, 150);
   do {
      read_sensors(1);
-  } while ((front_ultra_dis < 90 || front_right_dis > 70) && manual_mode == 0) ;
+  } while ((front_ultra_dis < 70 || front_right_dis > 70) && manual_mode == 0) ;
   state = WALL_TRACKING;
 }
 
