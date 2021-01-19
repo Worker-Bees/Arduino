@@ -61,7 +61,7 @@ volatile char command;
 volatile int command_speed = 0;
 int lenMicroSecondsOfPeriod = 25 * 1000; // 25 milliseconds (ms)
 int current = 0;
-volatile int manual_mode = -1;
+volatile int manual_mode = 0;
 void servo_initialize() {
   for(int i = 0; i <= 3700; i+=10){
        
@@ -138,6 +138,7 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(CONTROL_PIN), switch_mode, RISING);
   servo_initialize();
   read_sensors(1);
+//  motors_hard_left(200, 220);
 } 
 
 void switch_mode() {
@@ -169,14 +170,14 @@ void loop() {
 } 
 
 void WAITING_GATE_func() {
-  const int speed = 60;
+  const int speed = 70;
   motors_stop();
   
   // waiting for the gate to close
   do {
     read_sensors(50);
-    if (front_ultra_dis < 50) read_sensors(50);
-  } while (front_ultra_dis >= 50);
+    if (front_ultra_dis < 60) read_sensors(50);
+  } while (front_ultra_dis >= 60);
 
   // waiting for the gate to open
   do {
@@ -235,26 +236,30 @@ void adjust_motors(int speed) {
   int rate_of_change = 0;
   if (front_right_dis <= 70) {
       distance_diff = front_right_dis - 22;
-      motors_forward(constrain(speed + 40 + 20 * distance_diff, 41, 160), speed);
-      if (front_right_dis < 15) {
-        motors_hard_left(120, 130);
-        delay(200);
-      }
+      motors_forward(constrain(speed + 40 + 20 * distance_diff, 40, 220), speed);
+//      if (front_right_dis < 15) {
+//        motors_hard_left(150, 150);
+//      } else if (front_right_dis > 50) {
+//        motors_hard_right(150, 150);
+//      }
   } else{
-      distance_diff = right_ultra_dis - 12;
-      motors_forward(constrain(speed + 20 + 20 * distance_diff, 41, 160), speed);
+      distance_diff = right_ultra_dis - 10;
+        motors_forward(constrain(speed + 40 + 40 * distance_diff, 41, 220), speed);
+      if (right_ultra_dis < 8) {
+        motors_hard_left(120, 150);
+      }
   }
 }
 
 void WALL_TRACKING_func() {
-  const int speed = 60;
+  const int speed = 70;
   do {
     read_sensors(1);
     adjust_motors(speed);
-  } while ((front_right_dis <= 70 || right_ultra_dis <= 60) && front_ultra_dis > 30 && manual_mode == 0);
+  } while ((front_right_dis <= 70 || right_ultra_dis <= 70) && front_ultra_dis > 20 && manual_mode == 0);
   if (front_ultra_dis <= 25) 
     state = SEE_OBSTACLE;
-  else if (right_ultra_dis > 60 && front_right_dis > 70) 
+  else if (right_ultra_dis > 80 && front_right_dis > 70) 
     state = GET_LOST;
   else
     state = WALL_TRACKING;
@@ -265,24 +270,24 @@ void SEE_OBSTACLE_func() {
     motors_stop();
     do {
       read_sensors(1);
-    } while(front_ultra_dis <= 25 && manual_mode == 0);
+    } while(front_ultra_dis <= 20 && manual_mode == 0);
       delay(3000); 
   }
   read_sensors(1);
-  if (front_ultra_dis <= 30) {
-    motors_hard_left(120, 130);
+  if (front_ultra_dis <= 20) {
+    motors_hard_left(150, 120);
     do {
       read_sensors(1);
-    } while ((front_ultra_dis < 70 || front_right_dis <= 30) && manual_mode == 0);
+    } while ((front_ultra_dis < 70 || right_ultra_dis > 40) && manual_mode == 0);
   }
   state = WALL_TRACKING;
 }
 
 void GET_LOST_func() {
-  motors_hard_left(120, 150);
+  motors_hard_left(150, 120);
   do {
      read_sensors(1);
-  } while ((front_ultra_dis < 70 || front_right_dis > 70) && manual_mode == 0) ;
+  } while ((front_ultra_dis < 90 || front_right_dis > 70) && manual_mode == 0) ;
   state = WALL_TRACKING;
 }
 
@@ -308,7 +313,7 @@ void read_sensors(int max_index) {
     duration = pulseIn(ECHO, HIGH);
     // Tính khoảng cách đến vật.
     distance = int(duration/2/29.412);
-    front_temp += constrain(distance, 4, 500);
+    front_temp += constrain(distance, 4, 1000);
     delay(3);
       /* Phát xung từ chân trig */
    
@@ -326,6 +331,6 @@ void read_sensors(int max_index) {
     duration = pulseIn(ECHO2, HIGH);
     // Tính khoảng cách đến vật.
     distance = int(duration/2/29.412);
-  right_ultra_dis = constrain(distance, 4, 500);
+  right_ultra_dis = constrain(distance, 4, 1000);
   front_ultra_dis = front_temp / max_index;
 }
