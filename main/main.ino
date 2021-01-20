@@ -196,22 +196,26 @@ void WAITING_GATE_func() {
     adjust_motors(80);
   } while (manual_mode == 1);
   motors_stop();
+  delay(3000);
 }
 
 void OBJECT_DETECTION_func() {
   motors_stop();
   state = OBJECT_DETECTION;
+  int i = 0;
   do {
-    servo_up();
-    delay(100);
-    servo_down();
-    delay(100);
-    motors_hard_left(150, 150);
-    delay(100);
-    motors_hard_right(150, 150);
-    delay(200);
-    motors_forward(80, 60);
-    delay(100);
+    if (current > 1000) {
+      servo_down();
+    } else {
+      servo_up();
+    }
+    if (i % 2 == 0) {
+      motors_hard_right(200, 200);
+    } else motors_hard_left(150, 150);
+    delay(150);
+    motors_stop();
+    i++;
+    delay(1000);
   } while(manual_mode == 2);
 }
 
