@@ -18,6 +18,7 @@ typedef enum
   WALL_TRACKING,
   SEE_OBSTACLE,    
   GET_LOST,
+  WAITING_GATE,
   OBJECT_DETECTION,
   NUM_STATES,
 } State;
@@ -143,8 +144,10 @@ void setup() {
 
 void switch_mode() {
   motors_stop();
-  if (state == OBJECT_DETECTION) {
-    manual_mode = 2;  
+  if (state == WAITING_GATE) {
+    manual_mode = 2;
+  } else if (state == OBJECT_DETECTION) {
+    manual_mode = 3;  
   } else if (manual_mode == 0) {
     manual_mode = 1;
   } else if (manual_mode == -1) {
@@ -172,7 +175,7 @@ void loop() {
 void WAITING_GATE_func() {
   const int speed = 50;
   motors_stop();
-  
+  state = WAITING_GATE;
   // waiting for the gate to close
   do {
     read_sensors(50);
@@ -191,10 +194,7 @@ void WAITING_GATE_func() {
   do {
     read_sensors(1);
     adjust_motors(80);
-    if (Serial.available() > 0) {
-      command = Serial.read();
-    }
-  } while (command != 'o');
+  } while (manual_mode == 1);
   motors_stop();
 }
 
@@ -202,14 +202,23 @@ void OBJECT_DETECTION_func() {
   motors_stop();
   state = OBJECT_DETECTION;
   do {
-
-  } while(manual_mode == 1);
+    servo_up();
+    delay(100);
+    servo_down();
+    delay(100);
+    motors_hard_left(150, 150);
+    delay(100);
+    motors_hard_right(150, 150);
+    delay(200);
+    motors_forward(80, 60);
+    delay(100);
+  } while(manual_mode == 2);
 }
 
 void MANUAL_CONTROL_func() {
 //  digitalWrite(LED_BUILTIN, LOW);
   motors_stop();
-  while(manual_mode == 2){
+  while(manual_mode == 3){
     if (Serial.available() > 0) {
       command = Serial.read();
       switch (command) {
