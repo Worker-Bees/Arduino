@@ -62,7 +62,7 @@ volatile char command;
 volatile int command_speed = 0;
 int lenMicroSecondsOfPeriod = 25 * 1000; // 25 milliseconds (ms)
 int current = 0;
-volatile int manual_mode = 0;
+volatile int manual_mode = -1;
 void servo_initialize() {
   for(int i = 0; i <= 3700; i+=10){
        
@@ -211,11 +211,14 @@ void OBJECT_DETECTION_func() {
     }
     if (i % 2 == 0) {
       motors_hard_right(200, 200);
-    } else motors_hard_left(150, 150);
+    } else {
+      motors_hard_left(150, 150);
+      delay(100);
+    }
     delay(150);
     motors_stop();
     i++;
-    delay(1000);
+    delay(3000);
   } while(manual_mode == 2);
 }
 
@@ -248,7 +251,7 @@ void adjust_motors(int speed) {
   int rate_of_change = 0;
   if (front_right_dis <= 70) {
       distance_diff = front_right_dis - 28;
-      motors_forward(constrain(speed + 60 + 20 * distance_diff, 40, 160), speed);
+      motors_forward(constrain(speed + 20 + 40 * distance_diff, 40, 160), speed);
 //      if (front_right_dis < 15) {
 //        motors_hard_left(150, 150);
 //      } else if (front_right_dis > 50) {
@@ -256,7 +259,7 @@ void adjust_motors(int speed) {
 //      }
   } else{
       distance_diff = right_ultra_dis - 12;
-        motors_forward(constrain(speed + 60 + 20 * distance_diff, 41, 160), speed);
+        motors_forward(constrain(speed + 20 + 20 * distance_diff, 41, 160), speed);
       if (right_ultra_dis < 8) {
         motors_hard_left(120, 150);
       }
@@ -264,7 +267,7 @@ void adjust_motors(int speed) {
 }
 
 void WALL_TRACKING_func() {
-  const int speed = 50;
+  const int speed = 60;
   do {
     read_sensors(1);
     adjust_motors(speed);
